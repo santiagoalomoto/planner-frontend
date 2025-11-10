@@ -76,7 +76,7 @@ export default function Navbar() {
           </p>
 
           <NavLink to="/dashboard/rooms" className={linkClass}>
-            🏫 Salas
+            🏫 Aulas
           </NavLink>
           <NavLink to="/dashboard/timeslots" className={linkClass}>
             ⏰ Franjas Horarias

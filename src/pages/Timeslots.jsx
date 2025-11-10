@@ -1,240 +1,272 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-
-const API_URL = 'http://localhost:3000/api/timeslots';
+// src/pages/Timeslots.jsx
+import React, { useEffect, useState } from 'react'
+import api from '../api/axios'
+import Button from '../components/Button'
+import Table from '../components/Table'
+import Modal from '../components/Modal'
+import SectionTitle from '../components/SectionTitle'
 
 export default function Timeslots() {
-  const [timeslots, setTimeslots] = useState([]);
+  const [timeslots, setTimeslots] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState(null)
+
   const [form, setForm] = useState({
     day_of_week: '',
     start_time: '',
     end_time: '',
     duration_minutes: '',
-  });
-  const [editingId, setEditingId] = useState(null);
+  })
 
-  // Cargar timeslots al montar
-  useEffect(() => {
-    fetchTimeslots();
-  }, []);
+  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Bearer ${token}` } };
-  };
-
+  // 🔹 Cargar horarios
   const fetchTimeslots = async () => {
+    setLoading(true)
     try {
-      const res = await axios.get(API_URL, getAuthHeaders());
-      setTimeslots(res.data);
+      const res = await api.get('/timeslots')
+      setTimeslots(res.data || [])
     } catch (err) {
-      console.error('Error al obtener timeslots:', err);
-      alert('No se pudieron cargar los horarios.');
+      console.error('Error al obtener horarios:', err)
+      alert('❌ No se pudieron cargar los horarios.')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    fetchTimeslots()
+  }, [])
 
-  // Validaciones adicionales: no permitir horario fin antes de inicio
+  // 🔹 Validación
   const validateTimeslot = ({ start_time, end_time, duration_minutes }) => {
-    const start = new Date(`1970-01-01T${start_time}:00`);
-    const end = new Date(`1970-01-01T${end_time}:00`);
-    if (end <= start) return 'La hora de fin debe ser mayor que la hora de inicio.';
-    if (duration_minutes <= 0) return 'La duración debe ser mayor a 0 minutos.';
-    const diffMinutes = (end - start) / 60000;
-    if (diffMinutes < duration_minutes) return 'La duración no puede ser mayor que el intervalo de tiempo.';
-    return null;
-  };
+    if (!start_time || !end_time) return 'Debe seleccionar una hora de inicio y fin.'
+    const start = new Date(`1970-01-01T${start_time}:00`)
+    const end = new Date(`1970-01-01T${end_time}:00`)
+    if (end <= start) return 'La hora de fin debe ser mayor que la de inicio.'
+    if (!duration_minutes || duration_minutes <= 0)
+      return 'La duración debe ser mayor a 0 minutos.'
+    const diffMinutes = (end - start) / 60000
+    if (diffMinutes < duration_minutes)
+      return 'La duración no puede ser mayor que el intervalo total.'
+    return null
+  }
 
+  const checkOverlap = (payload) => {
+    return timeslots.some((t) => {
+      if (editing && (t.id === editing.id || t._id === editing._id)) return false
+      if (t.day_of_week !== payload.day_of_week) return false
+      const startNew = new Date(`1970-01-01T${payload.start_time}:00`)
+      const endNew = new Date(`1970-01-01T${payload.end_time}:00`)
+      const startExist = new Date(`1970-01-01T${t.start_time}:00`)
+      const endExist = new Date(`1970-01-01T${t.end_time}:00`)
+      return startNew < endExist && endNew > startExist
+    })
+  }
+
+  // 🔹 Guardar o actualizar horario
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    const error = validateTimeslot(form);
-    if (error) {
-      alert(error);
-      return;
+    const error = validateTimeslot(form)
+    if (error) return alert(error)
+
+    const payload = {
+      day_of_week: parseInt(form.day_of_week, 10),
+      start_time: form.start_time,
+      end_time: form.end_time,
+      duration_minutes: parseInt(form.duration_minutes, 10),
     }
+
+    if (checkOverlap(payload)) return alert('⚠️ Este horario se solapa con otro existente.')
 
     try {
-      const payload = {
-        day_of_week: parseInt(form.day_of_week, 10),
-        start_time: form.start_time,
-        end_time: form.end_time,
-        duration_minutes: parseInt(form.duration_minutes, 10),
-      };
-
-      if (editingId) {
-        await axios.patch(`${API_URL}/${editingId}`, payload, getAuthHeaders());
-        alert('Timeslot actualizado ✅');
+      if (editing) {
+        const id = editing.id ?? editing._id
+        await api.patch(`/timeslots/${id}`, payload)
+        alert('✏️ Horario actualizado correctamente.')
       } else {
-        // Validación de solapamiento con otros timeslots
-        const overlap = timeslots.some(
-          (t) =>
-            t.day_of_week === payload.day_of_week &&
-            ((payload.start_time >= t.start_time && payload.start_time < t.end_time) ||
-              (payload.end_time > t.start_time && payload.end_time <= t.end_time))
-        );
-        if (overlap) {
-          alert('⚠️ Este horario se solapa con otro existente.');
-          return;
-        }
-
-        await axios.post(API_URL, payload, getAuthHeaders());
-        alert('Timeslot creado ✅');
+        await api.post('/timeslots', payload)
+        alert('✅ Horario creado correctamente.')
       }
 
-      setForm({ day_of_week: '', start_time: '', end_time: '', duration_minutes: '' });
-      setEditingId(null);
-      fetchTimeslots();
+      setShowModal(false)
+      setEditing(null)
+      setForm({ day_of_week: '', start_time: '', end_time: '', duration_minutes: '' })
+      fetchTimeslots()
     } catch (err) {
-      console.error('Error al guardar:', err);
-      alert(err.response?.data?.message || 'Error al guardar el timeslot.');
+      console.error('Error al guardar horario:', err)
+      alert('❌ No se pudo guardar el horario.')
     }
-  };
+  }
 
+  // 🔹 Editar horario
   const handleEdit = (t) => {
+    setEditing(t)
     setForm({
       day_of_week: t.day_of_week,
       start_time: t.start_time,
       end_time: t.end_time,
       duration_minutes: t.duration_minutes,
-    });
-    setEditingId(t.id);
-  };
+    })
+    setShowModal(true)
+  }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este timeslot?')) return;
+  // 🔹 Eliminar horario
+  const handleDelete = async (t) => {
+    const id = t.id ?? t._id
+    if (!window.confirm('🗑️ ¿Seguro que deseas eliminar este horario?')) return
     try {
-      await axios.delete(`${API_URL}/${id}`, getAuthHeaders());
-      fetchTimeslots();
+      await api.delete(`/timeslots/${id}`)
+      alert('🗑️ Horario eliminado correctamente.')
+      fetchTimeslots()
     } catch (err) {
-      console.error('Error al eliminar:', err);
-      alert('No se pudo eliminar.');
+      console.error('Error al eliminar horario:', err)
+      alert('❌ No se pudo eliminar el horario.')
     }
-  };
+  }
 
-  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  // 🔹 Manejar cambios del formulario
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm({ ...form, [name]: value })
+  }
+
+  // 🔹 Renderizar acciones
+  const renderActions = (t) => (
+    <div className="flex gap-2 justify-center">
+      <button
+        onClick={() => handleEdit(t)}
+        className="text-blue-600 hover:text-blue-800 transition"
+        title="Editar horario"
+      >
+        ✏️
+      </button>
+      <button
+        onClick={() => handleDelete(t)}
+        className="text-red-600 hover:text-red-800 transition"
+        title="Eliminar horario"
+      >
+        🗑
+      </button>
+    </div>
+  )
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">🕓 Gestión de Horarios</h1>
+    <div className="p-6 animate-fadeIn">
+      {/* 🔹 Encabezado */}
+      <div className="flex justify-between items-center mb-6">
+        <SectionTitle title="🕓 Gestión de Horarios" />
+        <Button
+          onClick={() => {
+            setShowModal(true)
+            setEditing(null)
+            setForm({ day_of_week: '', start_time: '', end_time: '', duration_minutes: '' })
+          }}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          + Nuevo Horario
+        </Button>
+      </div>
 
-      {/* Formulario */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-lg p-4 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4"
+      {/* 🔹 Tabla */}
+      {loading ? (
+        <div className="text-center py-8 text-gray-500 animate-pulse">Cargando horarios...</div>
+      ) : timeslots.length === 0 ? (
+        <div className="text-center py-10 bg-white rounded-xl shadow-sm text-gray-500">
+          No hay horarios registrados todavía.
+        </div>
+      ) : (
+        <div className="bg-white shadow-md rounded-xl overflow-hidden">
+          <Table
+            headers={['Día', 'Inicio', 'Fin', 'Duración (min)', 'Acciones']}
+            data={timeslots.map((t) => [
+              dayNames[t.day_of_week - 1],
+              t.start_time,
+              t.end_time,
+              `${t.duration_minutes} min`,
+              renderActions(t),
+            ])}
+          />
+        </div>
+      )}
+
+      {/* 🔹 Modal Crear/Editar */}
+      <Modal
+        open={showModal}
+        title={editing ? 'Editar Horario' : 'Nuevo Horario'}
+        onClose={() => {
+          setShowModal(false)
+          setEditing(null)
+        }}
       >
-        <div>
-          <label className="block font-semibold mb-1">Día de la semana</label>
-          <select
-            name="day_of_week"
-            value={form.day_of_week}
-            onChange={handleChange}
-            required
-            className="border rounded w-full p-2"
-          >
-            <option value="">Selecciona un día</option>
-            {dayNames.map((d, i) => (
-              <option key={i} value={i + 1}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Día */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">Día de la semana</label>
+            <select
+              name="day_of_week"
+              value={form.day_of_week}
+              onChange={handleChange}
+              required
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+            >
+              <option value="">Selecciona un día</option>
+              {dayNames.map((d, i) => (
+                <option key={i} value={i + 1}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div>
-          <label className="block font-semibold mb-1">Hora inicio</label>
-          <input
-            type="time"
-            name="start_time"
-            value={form.start_time}
-            onChange={handleChange}
-            required
-            className="border rounded w-full p-2"
-          />
-        </div>
+          {/* Hora inicio */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">Hora de inicio</label>
+            <input
+              type="time"
+              name="start_time"
+              value={form.start_time}
+              onChange={handleChange}
+              required
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+            />
+          </div>
 
-        <div>
-          <label className="block font-semibold mb-1">Hora fin</label>
-          <input
-            type="time"
-            name="end_time"
-            value={form.end_time}
-            onChange={handleChange}
-            required
-            className="border rounded w-full p-2"
-          />
-        </div>
+          {/* Hora fin */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">Hora de fin</label>
+            <input
+              type="time"
+              name="end_time"
+              value={form.end_time}
+              onChange={handleChange}
+              required
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+            />
+          </div>
 
-        <div>
-          <label className="block font-semibold mb-1">Duración (minutos)</label>
-          <input
-            type="number"
-            name="duration_minutes"
-            min="1"
-            value={form.duration_minutes}
-            onChange={handleChange}
-            required
-            className="border rounded w-full p-2"
-          />
-        </div>
+          {/* Duración */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">Duración (minutos)</label>
+            <input
+              type="number"
+              name="duration_minutes"
+              value={form.duration_minutes}
+              onChange={handleChange}
+              min="1"
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+              placeholder="Ej: 90"
+              required
+            />
+          </div>
 
-        <div className="md:col-span-4">
-          <button
-            type="submit"
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition w-full"
-          >
-            {editingId ? 'Actualizar Horario' : 'Agregar Horario'}
-          </button>
-        </div>
-      </form>
-
-      {/* Tabla de horarios */}
-      <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="py-2 px-3 text-left">Día</th>
-            <th className="py-2 px-3 text-left">Inicio</th>
-            <th className="py-2 px-3 text-left">Fin</th>
-            <th className="py-2 px-3 text-left">Duración</th>
-            <th className="py-2 px-3 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {timeslots.length > 0 ? (
-            timeslots.map((t) => (
-              <tr key={t.id} className="border-t hover:bg-gray-50">
-                <td className="py-2 px-3">{dayNames[t.day_of_week - 1]}</td>
-                <td className="py-2 px-3">{t.start_time}</td>
-                <td className="py-2 px-3">{t.end_time}</td>
-                <td className="py-2 px-3">{t.duration_minutes} min</td>
-                <td className="py-2 px-3 text-center">
-                  <button
-                    onClick={() => handleEdit(t)}
-                    className="bg-yellow-500 text-white px-2 py-1 rounded mr-2 hover:bg-yellow-600"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(t.id)}
-                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="5" className="text-center py-4 text-gray-500">
-                No hay horarios registrados
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 transition">
+            {editing ? 'Actualizar' : 'Guardar'}
+          </Button>
+        </form>
+      </Modal>
     </div>
-  );
+  )
 }

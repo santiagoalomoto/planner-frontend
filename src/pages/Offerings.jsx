@@ -1,26 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import Card from '../components/Card'
-import SectionTitle from '../components/SectionTitle'
+import api from '../api/axios'
 import Button from '../components/Button'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
-import Input from '../components/Input'
-import api from '../api/axios' // ✅ Se usa la instancia con token
-
-const API = '/offerings'
-const COURSES_API = '/courses'
-const SEMESTERS_API = '/semesters'
-const TEACHERS_API = '/teachers'
+import SectionTitle from '../components/SectionTitle'
 
 export default function Offerings() {
   const [offerings, setOfferings] = useState([])
-  const [modalOpen, setModalOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  // 📋 Datos para selects
   const [courses, setCourses] = useState([])
   const [semesters, setSemesters] = useState([])
   const [teachers, setTeachers] = useState([])
+
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState(null)
 
   const [form, setForm] = useState({
     courseId: '',
@@ -29,137 +22,203 @@ export default function Offerings() {
     expected_students: '',
   })
 
-  // 🔄 Obtener ofertas
-  const getOfferings = async () => {
+  // 🔹 Cargar datos
+  const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await api.get(API)
-      setOfferings(res.data)
+      const [offeringsRes, coursesRes, semestersRes, teachersRes] = await Promise.all([
+        api.get('/offerings'),
+        api.get('/courses'),
+        api.get('/semesters'),
+        api.get('/teachers'),
+      ])
+      setOfferings(offeringsRes.data)
+      setCourses(coursesRes.data)
+      setSemesters(semestersRes.data)
+      setTeachers(teachersRes.data)
     } catch (err) {
-      console.error('❌ Error al obtener ofertas:', err)
-      alert('No se pudieron cargar las ofertas.')
+      console.error('Error cargando datos:', err)
+      alert('❌ No se pudieron cargar las ofertas.')
     } finally {
       setLoading(false)
     }
   }
 
-  // 📦 Obtener datos para selects
-  const getSelectData = async () => {
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  // 🔹 Validación
+  const validateForm = () => {
+    if (!form.courseId.trim() || !form.semesterId.trim()) {
+      alert('⚠️ Los campos de curso y semestre son obligatorios.')
+      return false
+    }
+    if (form.expected_students && isNaN(form.expected_students)) {
+      alert('⚠️ El número de estudiantes esperados debe ser un número.')
+      return false
+    }
+    return true
+  }
+
+  // 🔹 Guardar (crear o actualizar)
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!validateForm()) return
+
+    const payload = {
+      courseId: form.courseId,
+      semesterId: form.semesterId,
+      teacherId: form.teacherId || null,
+      expected_students: Number(form.expected_students) || 0,
+    }
+
     try {
-      const [coursesRes, semestersRes, teachersRes] = await Promise.all([
-        api.get(COURSES_API),
-        api.get(SEMESTERS_API),
-        api.get(TEACHERS_API),
-      ])
-      setCourses(coursesRes.data)
-      setSemesters(semestersRes.data)
-      setTeachers(teachersRes.data)
+      if (editing) {
+        await api.patch(`/offerings/${editing.id}`, payload)
+        alert('✏️ Oferta actualizada correctamente.')
+      } else {
+        await api.post('/offerings', payload)
+        alert('✅ Oferta creada exitosamente.')
+      }
+      setShowModal(false)
+      setEditing(null)
+      setForm({ courseId: '', semesterId: '', teacherId: '', expected_students: '' })
+      fetchData()
     } catch (err) {
-      console.error('❌ Error cargando datos de selects:', err)
+      console.error('Error al guardar oferta:', err)
+      alert('❌ No se pudo guardar la oferta.')
     }
   }
 
-  // ✍️ Manejar cambios del formulario
-  const handleChange = e => {
+  // 🔹 Editar
+  const handleEdit = (off) => {
+    setEditing(off)
+    setForm({
+      courseId: off.course?.id || '',
+      semesterId: off.semester?.id || '',
+      teacherId: off.teacher?.id || '',
+      expected_students: off.expected_students || '',
+    })
+    setShowModal(true)
+  }
+
+  // 🔹 Eliminar
+  const handleDelete = async (id) => {
+    if (!window.confirm('🗑️ ¿Seguro que deseas eliminar esta oferta?')) return
+    try {
+      await api.delete(`/offerings/${id}`)
+      alert('🗑️ Oferta eliminada correctamente.')
+      fetchData()
+    } catch (err) {
+      console.error('Error al eliminar oferta:', err)
+      alert('❌ No se pudo eliminar la oferta.')
+    }
+  }
+
+  // 🔹 Estado visual
+  const renderStatus = (status) => {
+    const base = 'px-3 py-1 rounded-full text-xs font-semibold'
+    switch (status) {
+      case 'active':
+        return <span className={`${base} bg-green-100 text-green-700`}>Activo</span>
+      case 'inactive':
+        return <span className={`${base} bg-red-100 text-red-700`}>Inactivo</span>
+      default:
+        return <span className={`${base} bg-gray-200 text-gray-700`}>{status}</span>
+    }
+  }
+
+  // 🔹 Acciones
+  const renderActions = (off) => (
+    <div className="flex gap-2 justify-center">
+      <button
+        onClick={() => handleEdit(off)}
+        className="text-blue-600 hover:text-blue-800 transition"
+        title="Editar"
+      >
+        ✏️
+      </button>
+      <button
+        onClick={() => handleDelete(off.id)}
+        className="text-red-600 hover:text-red-800 transition"
+        title="Eliminar"
+      >
+        🗑
+      </button>
+    </div>
+  )
+
+  // 🔹 Manejar cambios
+  const handleChange = (e) => {
     const { name, value } = e.target
     setForm({ ...form, [name]: value })
   }
 
-  // 💾 Guardar nueva oferta
-  const handleSubmit = async () => {
-    if (!form.courseId || !form.semesterId) {
-      alert('Los campos de curso y semestre son obligatorios.')
-      return
-    }
-
-    try {
-      await api.post(API, {
-        ...form,
-        expected_students: Number(form.expected_students) || 0,
-      })
-      setModalOpen(false)
-      setForm({
-        courseId: '',
-        semesterId: '',
-        teacherId: '',
-        expected_students: '',
-      })
-      getOfferings()
-    } catch (err) {
-      console.error('❌ Error al crear oferta:', err)
-      alert('No se pudo crear la oferta.')
-    }
-  }
-
-  // 🗑️ Eliminar oferta
-  const handleDelete = async id => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta oferta?')) return
-    try {
-      await api.delete(`${API}/${id}`)
-      getOfferings()
-    } catch (err) {
-      console.error('❌ Error al eliminar oferta:', err)
-      alert('No se pudo eliminar la oferta.')
-    }
-  }
-
-  // 🚀 Al montar el componente
-  useEffect(() => {
-    getOfferings()
-    getSelectData()
-  }, [])
-
   return (
-    <div className="p-6 space-y-6">
-      <SectionTitle
-        title="Gestión de Ofertas de Curso"
-        subtitle="Administra las asignaciones de cursos, semestres y docentes"
-      />
+    <div className="p-6 animate-fadeIn">
+      <div className="flex justify-between items-center mb-6">
+        <SectionTitle title="📘 Gestión de Ofertas de Curso" />
+        <Button
+          onClick={() => {
+            setShowModal(true)
+            setEditing(null)
+            setForm({ courseId: '', semesterId: '', teacherId: '', expected_students: '' })
+          }}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          + Nueva Oferta
+        </Button>
+      </div>
 
-      <Card>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Ofertas registradas</h3>
-          <Button onClick={() => setModalOpen(true)}>+ Nueva Oferta</Button>
+      {loading ? (
+        <div className="text-center py-8 text-gray-500 animate-pulse">
+          Cargando ofertas...
         </div>
+      ) : offerings.length === 0 ? (
+        <div className="text-center py-10 bg-white rounded-xl shadow-sm text-gray-500">
+          No hay ofertas registradas todavía.
+        </div>
+      ) : (
+        <div className="bg-white shadow-md rounded-xl overflow-hidden">
+          <Table
+            headers={['Curso', 'Semestre', 'Docente', 'Estudiantes', 'Estado', 'Acciones']}
+            data={offerings.map((o) => [
+              o.course?.name || '-',
+              o.semester?.name || '-',
+              o.teacher?.name || '(Sin asignar)',
+              o.expected_students || 0,
+              renderStatus(o.status || 'active'),
+              renderActions(o),
+            ])}
+          />
+        </div>
+      )}
 
-        <Table
-          headers={['Curso', 'Semestre', 'Docente', 'Estudiantes', 'Estado', 'Acciones']}
-          data={offerings.map(off => [
-            off.course?.name || '-',
-            off.semester?.name || '-',
-            off.teacher?.name || '(Sin asignar)',
-            off.expected_students ?? 0,
-            off.status || 'Activo',
-            <div className="flex gap-2">
-              <Button
-                color="danger"
-                size="sm"
-                onClick={() => handleDelete(off.id)}
-              >
-                Eliminar
-              </Button>
-            </div>,
-          ])}
-          loading={loading}
-        />
-      </Card>
-
-      {/* 🧩 Modal de creación */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva Oferta">
-        <div className="space-y-4">
-          {/* Select de cursos */}
+      {/* 🔹 Modal Crear/Editar */}
+      <Modal
+        open={showModal}
+        title={editing ? 'Editar Oferta' : 'Nueva Oferta'}
+        onClose={() => {
+          setShowModal(false)
+          setEditing(null)
+        }}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Curso */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-600">
               Curso
             </label>
             <select
               name="courseId"
               value={form.courseId}
               onChange={handleChange}
-              className="w-full border rounded-lg p-2 outline-none focus:ring focus:ring-blue-300"
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+              required
             >
               <option value="">Seleccione un curso</option>
-              {courses.map(c => (
+              {courses.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -167,19 +226,20 @@ export default function Offerings() {
             </select>
           </div>
 
-          {/* Select de semestres */}
+          {/* Semestre */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-600">
               Semestre
             </label>
             <select
               name="semesterId"
               value={form.semesterId}
               onChange={handleChange}
-              className="w-full border rounded-lg p-2 outline-none focus:ring focus:ring-blue-300"
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+              required
             >
               <option value="">Seleccione un semestre</option>
-              {semesters.map(s => (
+              {semesters.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
@@ -187,19 +247,19 @@ export default function Offerings() {
             </select>
           </div>
 
-          {/* Select de docentes */}
+          {/* Docente */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-600">
               Docente (opcional)
             </label>
             <select
               name="teacherId"
               value={form.teacherId}
               onChange={handleChange}
-              className="w-full border rounded-lg p-2 outline-none focus:ring focus:ring-blue-300"
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
             >
               <option value="">(Sin asignar)</option>
-              {teachers.map(t => (
+              {teachers.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
@@ -207,23 +267,29 @@ export default function Offerings() {
             </select>
           </div>
 
-          {/* Campo de número */}
-          <Input
-            type="number"
-            label="Estudiantes esperados"
-            name="expected_students"
-            value={form.expected_students}
-            onChange={handleChange}
-            placeholder="0"
-          />
-
-          <div className="flex justify-end gap-2 mt-4">
-            <Button color="secondary" onClick={() => setModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit}>Guardar</Button>
+          {/* Estudiantes esperados */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">
+              Estudiantes esperados
+            </label>
+            <input
+              type="number"
+              name="expected_students"
+              value={form.expected_students}
+              onChange={handleChange}
+              min="0"
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+              placeholder="Ej: 25"
+            />
           </div>
-        </div>
+
+          <Button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 transition"
+          >
+            {editing ? 'Actualizar' : 'Guardar'}
+          </Button>
+        </form>
       </Modal>
     </div>
   )

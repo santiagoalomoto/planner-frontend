@@ -25,7 +25,6 @@ export default function Enrollments() {
         api.get("/offerings"),
         api.get("/sections"),
       ]);
-
       setEnrollments(enrRes.data);
       setStudents(stuRes.data);
       setOfferings(offRes.data);
@@ -38,10 +37,9 @@ export default function Enrollments() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+    setForm((prev) => ({ ...prev, [name]: value }));
 
     if (name === "offeringId") {
-      // Filtrar secciones con cupo
       const filteredSec = sections
         .map((s) => {
           const maxCap = s.assigned_room?.capacity ?? s.capacity ?? 0;
@@ -54,10 +52,10 @@ export default function Enrollments() {
       setFilteredSections(filteredSec);
       setForm((prev) => ({ ...prev, sectionId: "" }));
 
-      // Filtrar estudiantes que no están inscritos en la oferta
       const enrolledStudentIds = enrollments
         .filter((enr) => enr.offering?.id === value)
         .map((enr) => enr.student?.id);
+
       const filteredStu = students.filter((s) => !enrolledStudentIds.includes(s.id));
       setFilteredStudents(filteredStu);
       setForm((prev) => ({ ...prev, studentId: "" }));
@@ -66,15 +64,12 @@ export default function Enrollments() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // limpiar errores anteriores
+    setError("");
 
     if (!form.studentId || !form.offeringId || !form.sectionId) {
       setError("Debes seleccionar estudiante, oferta y sección.");
       return;
     }
-
-    // Debug: mostrar lo que se va a enviar al backend
-    console.log("Formulario enviado:", form);
 
     try {
       if (editingId) {
@@ -90,19 +85,12 @@ export default function Enrollments() {
       loadData();
     } catch (err) {
       console.error("Error al guardar:", err);
-
-      // Extraer mensaje de error del backend
       let msg = "Error desconocido al guardar.";
       if (err.response) {
-        if (Array.isArray(err.response.data?.message)) {
-          msg = err.response.data.message.join(", ");
-        } else if (typeof err.response.data?.message === "string") {
-          msg = err.response.data.message;
-        } else if (typeof err.response.data === "string") {
-          msg = err.response.data;
-        }
+        if (Array.isArray(err.response.data?.message)) msg = err.response.data.message.join(", ");
+        else if (typeof err.response.data?.message === "string") msg = err.response.data.message;
+        else if (typeof err.response.data === "string") msg = err.response.data;
       }
-
       setError(msg);
     }
   };
@@ -150,16 +138,19 @@ export default function Enrollments() {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-4">📘 Gestión de Inscripciones</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-gray-800">📘 Gestión de Inscripciones</h2>
 
-      <form onSubmit={handleSubmit} className="bg-gray-100 p-4 rounded-md mb-6 space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-gray-100 p-4 rounded-xl shadow-md mb-6 space-y-4 border border-gray-200"
+      >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <select
             name="studentId"
             value={form.studentId}
             onChange={handleChange}
             required
-            className="border p-2 rounded w-full"
+            className="border border-gray-300 p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
             disabled={!form.offeringId || filteredStudents.length === 0}
           >
             <option value="">
@@ -179,7 +170,7 @@ export default function Enrollments() {
             value={form.offeringId}
             onChange={handleChange}
             required
-            className="border p-2 rounded w-full"
+            className="border border-gray-300 p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
           >
             <option value="">Seleccionar Oferta</option>
             {offerings.map((o) => (
@@ -194,7 +185,7 @@ export default function Enrollments() {
             value={form.sectionId}
             onChange={handleChange}
             required
-            className="border p-2 rounded w-full"
+            className="border border-gray-300 p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-400"
             disabled={!form.offeringId || filteredSections.length === 0}
           >
             <option value="">
@@ -212,48 +203,68 @@ export default function Enrollments() {
 
         <button
           type="submit"
-          className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className={`mt-3 px-5 py-2 rounded-lg text-white font-medium shadow-sm transition 
+            ${
+              editingId
+                ? "bg-yellow-500 hover:bg-yellow-600"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           disabled={!form.studentId || !form.offeringId || !form.sectionId}
         >
           {editingId ? "Actualizar" : "Agregar"}
         </button>
 
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+        {error && <p className="text-red-500 mt-2 font-medium">{error}</p>}
       </form>
 
-      <table className="w-full border">
-        <thead className="bg-gray-200">
+      <table className="w-full border border-gray-300 rounded-xl overflow-hidden shadow-sm">
+        <thead className="bg-gray-200 text-gray-700">
           <tr>
             <th className="p-2 border">Estudiante</th>
             <th className="p-2 border">Curso</th>
             <th className="p-2 border">Sección</th>
             <th className="p-2 border">Estado</th>
-            <th className="p-2 border">Acciones</th>
+            <th className="p-2 border text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          {enrollments.map((e) => (
-            <tr key={e.id} className="border-t">
-              <td className="p-2 border">{e.student?.name || "—"}</td>
-              <td className="p-2 border">{e.offering?.course?.name || "—"}</td>
-              <td className="p-2 border">{e.section?.code || "—"}</td>
-              <td className="p-2 border">{e.status}</td>
-              <td className="p-2 border">
-                <button
-                  onClick={() => handleEdit(e)}
-                  className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(e.id)}
-                  className="bg-red-600 text-white px-2 py-1 rounded"
-                >
-                  Eliminar
-                </button>
+          {enrollments.length === 0 ? (
+            <tr>
+              <td colSpan="5" className="text-center py-4 text-gray-500">
+                No hay inscripciones registradas
               </td>
             </tr>
-          ))}
+          ) : (
+            enrollments.map((e) => (
+              <tr
+                key={e.id}
+                className="border-t hover:bg-gray-50 transition text-gray-800"
+              >
+                <td className="p-2 border">{e.student?.name || "—"}</td>
+                <td className="p-2 border">{e.offering?.course?.name || "—"}</td>
+                <td className="p-2 border">{e.section?.code || "—"}</td>
+                <td className="p-2 border">{e.status}</td>
+                <td className="p-2 border">
+                  <div className="flex items-center justify-center gap-3 py-1">
+                    <button
+                      onClick={() => handleEdit(e)}
+                      className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition"
+                      title="Editar inscripción"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(e.id)}
+                      className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition"
+                      title="Eliminar inscripción"
+                    >
+                      🗑
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
