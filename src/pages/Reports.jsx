@@ -19,20 +19,23 @@ export default function Reports() {
 
   const loadData = async () => {
     try {
-      const [stRes, tRes, cRes, seRes, scRes] = await Promise.all([
+      const [stRes, tRes, cRes, seRes, rRes, teRes] = await Promise.all([
         api.get('/students'),
         api.get('/teachers'),
         api.get('/courses'),
         api.get('/semesters'),
-        api.get('/schedules'),
+        api.get('/schedules/rooms'),
+        api.get('/schedules/teachers'),
       ])
+
+      const totalSchedules = rRes.data.length + teRes.data.length
 
       setSummary({
         students: stRes.data.length,
         teachers: tRes.data.length,
         courses: cRes.data.length,
         semesters: seRes.data.length,
-        schedules: scRes.data.length,
+        schedules: totalSchedules,
       })
     } catch (err) {
       console.error('❌ Error al cargar reportes:', err)
