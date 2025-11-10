@@ -25,16 +25,23 @@ export default function Schedules() {
 
   const fetchData = async () => {
     try {
-      const [roomSchedRes, teacherSchedRes, roomsRes, teachersRes, timesRes, sectRes, semRes] =
-        await Promise.all([
-          api.get('/schedules/rooms'),
-          api.get('/schedules/teachers'),
-          api.get('/rooms'),
-          api.get('/teachers'),
-          api.get('/timeslots'),
-          api.get('/sections'),
-          api.get('/semesters'),
-        ])
+      const [
+        roomSchedRes,
+        teacherSchedRes,
+        roomsRes,
+        teachersRes,
+        timesRes,
+        sectRes,
+        semRes,
+      ] = await Promise.all([
+        api.get('/schedules/rooms'),
+        api.get('/schedules/teachers'),
+        api.get('/rooms'),
+        api.get('/teachers'),
+        api.get('/timeslots'),
+        api.get('/sections'),
+        api.get('/semesters'),
+      ])
 
       setRoomSchedules(roomSchedRes.data)
       setTeacherSchedules(teacherSchedRes.data)
@@ -54,11 +61,16 @@ export default function Schedules() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.roomId || !form.teacherId || !form.timeslotId || !form.sectionId || !form.semesterId)
+    if (
+      !form.roomId ||
+      !form.teacherId ||
+      !form.timeslotId ||
+      !form.sectionId ||
+      !form.semesterId
+    )
       return alert('Completa todos los campos')
 
     try {
-      // Guardar en ambos horarios (aula y docente)
       await Promise.all([
         api.post('/schedules/rooms', {
           roomId: form.roomId,
@@ -102,39 +114,82 @@ export default function Schedules() {
       <h1 className="text-2xl font-semibold mb-4">Gestión de Horarios</h1>
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="bg-white shadow p-4 rounded mb-6 flex flex-wrap gap-3">
-        <select name="roomId" value={form.roomId} onChange={handleChange} className="border p-2 rounded flex-1">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow p-4 rounded mb-6 flex flex-wrap gap-3"
+      >
+        {/* Aula */}
+        <select
+          name="roomId"
+          value={form.roomId}
+          onChange={handleChange}
+          className="border p-2 rounded flex-1"
+        >
           <option value="">Seleccionar aula</option>
           {rooms.map((r) => (
-            <option key={r.id} value={r.id}>{r.name}</option>
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
           ))}
         </select>
 
-        <select name="teacherId" value={form.teacherId} onChange={handleChange} className="border p-2 rounded flex-1">
+        {/* Docente */}
+        <select
+          name="teacherId"
+          value={form.teacherId}
+          onChange={handleChange}
+          className="border p-2 rounded flex-1"
+        >
           <option value="">Seleccionar docente</option>
           {teachers.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
           ))}
         </select>
 
-        <select name="timeslotId" value={form.timeslotId} onChange={handleChange} className="border p-2 rounded flex-1">
+        {/* Horario */}
+        <select
+          name="timeslotId"
+          value={form.timeslotId}
+          onChange={handleChange}
+          className="border p-2 rounded flex-1"
+        >
           <option value="">Seleccionar horario</option>
           {timeslots.map((t) => (
-            <option key={t.id} value={t.id}>{t.label}</option>
+            <option key={t.id} value={t.id}>
+              {`Día ${t.day_of_week} | ${t.start_time} - ${t.end_time}`}
+            </option>
           ))}
         </select>
 
-        <select name="sectionId" value={form.sectionId} onChange={handleChange} className="border p-2 rounded flex-1">
+        {/* Sección */}
+        <select
+          name="sectionId"
+          value={form.sectionId}
+          onChange={handleChange}
+          className="border p-2 rounded flex-1"
+        >
           <option value="">Seleccionar sección</option>
           {sections.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>
+              {s.code}
+            </option>
           ))}
         </select>
 
-        <select name="semesterId" value={form.semesterId} onChange={handleChange} className="border p-2 rounded flex-1">
+        {/* Semestre */}
+        <select
+          name="semesterId"
+          value={form.semesterId}
+          onChange={handleChange}
+          className="border p-2 rounded flex-1"
+        >
           <option value="">Seleccionar semestre</option>
           {semesters.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
           ))}
         </select>
 
@@ -158,11 +213,18 @@ export default function Schedules() {
             {roomSchedules.map((r) => (
               <tr key={r.id}>
                 <td className="border p-2">{r.room?.name}</td>
-                <td className="border p-2">{r.section?.name}</td>
-                <td className="border p-2">{r.timeslot?.label}</td>
+                <td className="border p-2">{r.section?.code}</td>
+                <td className="border p-2">
+                  {r.timeslot
+                    ? `Día ${r.timeslot.day_of_week} | ${r.timeslot.start_time} - ${r.timeslot.end_time}`
+                    : ''}
+                </td>
                 <td className="border p-2">{r.semester?.name}</td>
                 <td className="border p-2">
-                  <button onClick={() => handleDelete(r.id, 'rooms')} className="text-red-600 hover:underline">
+                  <button
+                    onClick={() => handleDelete(r.id, 'rooms')}
+                    className="text-red-600 hover:underline"
+                  >
                     Eliminar
                   </button>
                 </td>
@@ -189,11 +251,18 @@ export default function Schedules() {
             {teacherSchedules.map((t) => (
               <tr key={t.id}>
                 <td className="border p-2">{t.teacher?.name}</td>
-                <td className="border p-2">{t.section?.name}</td>
-                <td className="border p-2">{t.timeslot?.label}</td>
+                <td className="border p-2">{t.section?.code}</td>
+                <td className="border p-2">
+                  {t.timeslot
+                    ? `Día ${t.timeslot.day_of_week} | ${t.timeslot.start_time} - ${t.timeslot.end_time}`
+                    : ''}
+                </td>
                 <td className="border p-2">{t.semester?.name}</td>
                 <td className="border p-2">
-                  <button onClick={() => handleDelete(t.id, 'teachers')} className="text-red-600 hover:underline">
+                  <button
+                    onClick={() => handleDelete(t.id, 'teachers')}
+                    className="text-red-600 hover:underline"
+                  >
                     Eliminar
                   </button>
                 </td>
