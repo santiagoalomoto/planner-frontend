@@ -27,8 +27,7 @@ export default function Reports() {
 
   const loadData = async () => {
     try {
-      // ✅ Usa rutas reales del backend
-      const [stRes, tRes, cRes, seRes, scRoomRes, scTeacherRes] = await Promise.all([
+      const [stRes, tRes, cRes, seRes, scRes] = await Promise.all([
         api.get('/students'),
         api.get('/teachers'),
         api.get('/courses'),
@@ -37,14 +36,12 @@ export default function Reports() {
         api.get('/schedules/teachers'),
       ])
 
-      const totalSchedules = (scRoomRes.data?.length || 0) + (scTeacherRes.data?.length || 0)
-
       setSummary({
-        students: stRes.data.length || 0,
-        teachers: tRes.data.length || 0,
-        courses: cRes.data.length || 0,
-        semesters: seRes.data.length || 0,
-        schedules: totalSchedules,
+        students: stRes.data.length,
+        teachers: tRes.data.length,
+        courses: cRes.data.length,
+        semesters: seRes.data.length,
+        schedules: scRes.data.length,
       })
     } catch (err) {
       console.error('❌ Error al cargar reportes:', err)

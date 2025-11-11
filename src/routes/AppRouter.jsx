@@ -1,46 +1,51 @@
-import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 // 🧩 Páginas principales
-import Login from '../pages/Login'
-import Register from '../pages/Register'
-import Dashboard from '../pages/Dashboard'
-import NotFound from '../pages/NotFound'
+import Login from '../pages/Login';
+import Register from '../pages/Register';
+import Dashboard from '../pages/Dashboard';
+import NotFound from '../pages/NotFound';
 
 // 🛡️ Protección de rutas
-import ProtectedRoute from './ProtectedRoute'
+import ProtectedRoute from './ProtectedRoute';
 
 // 📘 Nuevas vistas
-import Semesters from '../pages/Semesters'
-import Courses from '../pages/Courses'
-import Teachers from '../pages/Teachers'
-import Students from '../pages/Students'
-import Schedules from '../pages/Schedules'
-import Reports from '../pages/Reports'
-import Rooms from '../pages/Rooms'
-import Sections from '../pages/Sections'
-import StudentSections from '../pages/StudentSections'
-import Offerings from '../pages/Offerings'
-import Users from '../pages/Users'
-import Timeslots from '../pages/Timeslots'
-import Enrollments from '../pages/Enrollments'
-import AuditLogs from '../pages/AuditLogs' // ✅ NUEVO
+import Semesters from '../pages/Semesters';
+import Courses from '../pages/Courses';
+import Teachers from '../pages/Teachers';
+import Students from '../pages/Students';
+import Schedules from '../pages/Schedules';
+import Reports from '../pages/Reports';
+import Rooms from '../pages/Rooms';
+import Sections from '../pages/Sections';
+import StudentSections from '../pages/StudentSections';
+import Offerings from '../pages/Offerings';
+import Users from '../pages/Users';
+import Timeslots from '../pages/Timeslots';
+import Enrollments from '../pages/Enrollments';
+import AuditLogs from '../pages/AuditLogs';
+import Conflicts from '../pages/conflicts';
+import Settings from '../pages/Settings'; // ✅ Corregido (asegúrate de tener src/pages/Settings.jsx)
 
 // 🧱 Layout del panel
-import DashboardLayout from '../layouts/DashboardLayout'
+import DashboardLayout from '../layouts/DashboardLayout';
 
 export default function AppRouter() {
   return (
     <Routes>
+      {/* 🔹 Redirección inicial */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      {/* 🔹 Rutas públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Dashboard principal */}
+      {/* 🔹 Dashboard principal */}
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute roles={['admin','coordinator']}>
+          <ProtectedRoute roles={['admin', 'coordinator']}>
             <DashboardLayout>
               <Dashboard />
             </DashboardLayout>
@@ -48,7 +53,7 @@ export default function AppRouter() {
         }
       />
 
-      {/* Semesters: solo admin */}
+      {/* 🔹 Semestres */}
       <Route
         path="/dashboard/semesters"
         element={
@@ -60,11 +65,11 @@ export default function AppRouter() {
         }
       />
 
-      {/* Cursos: admin y coordinator */}
+      {/* 🔹 Cursos */}
       <Route
         path="/dashboard/courses"
         element={
-          <ProtectedRoute roles={['admin','coordinator']}>
+          <ProtectedRoute roles={['admin', 'coordinator']}>
             <DashboardLayout>
               <Courses />
             </DashboardLayout>
@@ -72,11 +77,11 @@ export default function AppRouter() {
         }
       />
 
-      {/* Profesores: admin y coordinator */}
+      {/* 🔹 Profesores */}
       <Route
         path="/dashboard/teachers"
         element={
-          <ProtectedRoute roles={['admin','coordinator']}>
+          <ProtectedRoute roles={['admin', 'coordinator']}>
             <DashboardLayout>
               <Teachers />
             </DashboardLayout>
@@ -84,11 +89,11 @@ export default function AppRouter() {
         }
       />
 
-      {/* Estudiantes: admin y coordinator */}
+      {/* 🔹 Estudiantes */}
       <Route
         path="/dashboard/students"
         element={
-          <ProtectedRoute roles={['admin','coordinator']}>
+          <ProtectedRoute roles={['admin', 'coordinator']}>
             <DashboardLayout>
               <Students />
             </DashboardLayout>
@@ -96,11 +101,11 @@ export default function AppRouter() {
         }
       />
 
-      {/* Secciones: admin y coordinator */}
+      {/* 🔹 Secciones */}
       <Route
         path="/dashboard/sections"
         element={
-          <ProtectedRoute roles={['admin','coordinator']}>
+          <ProtectedRoute roles={['admin', 'coordinator']}>
             <DashboardLayout>
               <Sections />
             </DashboardLayout>
@@ -108,11 +113,11 @@ export default function AppRouter() {
         }
       />
 
-      {/* Secciones del estudiante: admin, coordinator, student */}
+      {/* 🔹 Secciones del estudiante */}
       <Route
         path="/dashboard/student-sections"
         element={
-          <ProtectedRoute roles={['admin','coordinator','student']}>
+          <ProtectedRoute roles={['admin', 'coordinator', 'student']}>
             <DashboardLayout>
               <StudentSections />
             </DashboardLayout>
@@ -120,11 +125,11 @@ export default function AppRouter() {
         }
       />
 
-      {/* Ofertas: admin y coordinator */}
+      {/* 🔹 Ofertas */}
       <Route
         path="/dashboard/offerings"
         element={
-          <ProtectedRoute roles={['admin','coordinator']}>
+          <ProtectedRoute roles={['admin', 'coordinator']}>
             <DashboardLayout>
               <Offerings />
             </DashboardLayout>
@@ -132,7 +137,7 @@ export default function AppRouter() {
         }
       />
 
-      {/* Usuarios: solo admin */}
+      {/* 🔹 Usuarios */}
       <Route
         path="/dashboard/users"
         element={
@@ -144,47 +149,11 @@ export default function AppRouter() {
         }
       />
 
-      {/* Timeslots: admin y coordinator */}
-      <Route
-        path="/dashboard/timeslots"
-        element={
-          <ProtectedRoute roles={['admin','coordinator']}>
-            <DashboardLayout>
-              <Timeslots />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Enrollments: admin y coordinator */}
-      <Route
-        path="/dashboard/enrollments"
-        element={
-          <ProtectedRoute roles={['admin','coordinator']}>
-            <DashboardLayout>
-              <Enrollments />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Salones: admin y coordinator */}
-      <Route
-        path="/dashboard/rooms"
-        element={
-          <ProtectedRoute roles={['admin','coordinator']}>
-            <DashboardLayout>
-              <Rooms />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Horarios: admin y coordinator */}
+      {/* 🔹 Horarios */}
       <Route
         path="/dashboard/schedules"
         element={
-          <ProtectedRoute roles={['admin','coordinator']}>
+          <ProtectedRoute roles={['admin', 'coordinator']}>
             <DashboardLayout>
               <Schedules />
             </DashboardLayout>
@@ -192,11 +161,47 @@ export default function AppRouter() {
         }
       />
 
-      {/* Reportes: admin y coordinator */}
+      {/* 🔹 Salones */}
+      <Route
+        path="/dashboard/rooms"
+        element={
+          <ProtectedRoute roles={['admin', 'coordinator']}>
+            <DashboardLayout>
+              <Rooms />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🔹 Bloques de tiempo */}
+      <Route
+        path="/dashboard/timeslots"
+        element={
+          <ProtectedRoute roles={['admin', 'coordinator']}>
+            <DashboardLayout>
+              <Timeslots />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🔹 Matrículas */}
+      <Route
+        path="/dashboard/enrollments"
+        element={
+          <ProtectedRoute roles={['admin', 'coordinator']}>
+            <DashboardLayout>
+              <Enrollments />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🔹 Reportes */}
       <Route
         path="/dashboard/reports"
         element={
-          <ProtectedRoute roles={['admin','coordinator']}>
+          <ProtectedRoute roles={['admin', 'coordinator']}>
             <DashboardLayout>
               <Reports />
             </DashboardLayout>
@@ -204,7 +209,31 @@ export default function AppRouter() {
         }
       />
 
-      {/* ✅ AuditLogs: solo admin */}
+      {/* 🔹 Conflictos */}
+      <Route
+        path="/dashboard/conflicts"
+        element={
+          <ProtectedRoute roles={['admin', 'coordinator']}>
+            <DashboardLayout>
+              <Conflicts />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🔹 Configuración */}
+      <Route
+        path="/dashboard/settings"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <DashboardLayout>
+              <Settings />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🔹 Auditoría */}
       <Route
         path="/dashboard/audit-logs"
         element={
@@ -216,7 +245,8 @@ export default function AppRouter() {
         }
       />
 
+      {/* 🔹 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
-  )
+  );
 }
