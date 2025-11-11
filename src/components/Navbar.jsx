@@ -23,7 +23,7 @@ export default function Navbar() {
     <aside className="bg-white w-64 min-h-screen shadow-md flex flex-col justify-between">
       <div>
         <div className="px-4 py-6 border-b">
-          <h2 className="text-2xl font-bold text-blue-600">Planner</h2>
+          <h2 className="text-2xl font-bold text-blue-600">Planificación Academica</h2>
           <p className="text-xs text-gray-500">Panel Administrativo</p>
         </div>
 
