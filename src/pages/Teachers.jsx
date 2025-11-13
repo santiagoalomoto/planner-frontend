@@ -1,20 +1,34 @@
 import React, { useEffect, useState } from 'react'
 import api from '../api/axios'
+import Button from '../components/Button'
+import Table from '../components/Table'
+import Modal from '../components/Modal'
+import SectionTitle from '../components/SectionTitle'
 
 export default function Teachers() {
   const [teachers, setTeachers] = useState([])
-  const [form, setForm] = useState({ name: '', email: '', max_weekly_hours: '', notes: '' })
-  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    max_weekly_hours: '',
+    notes: '',
+  })
+  const [editing, setEditing] = useState(null)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
 
   // 🔹 Cargar docentes
   const fetchTeachers = async () => {
+    setLoading(true)
     try {
       const res = await api.get('/teachers')
       setTeachers(res.data)
     } catch (err) {
       console.error('❌ Error cargando docentes:', err)
       setError('No se pudieron cargar los docentes. Intenta más tarde.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -33,33 +47,35 @@ export default function Teachers() {
     setError('')
 
     if (!form.name.trim()) {
-      setError('El nombre es obligatorio')
+      setError('⚠️ El nombre es obligatorio.')
       return
     }
 
     try {
-      if (editingId) {
-        await api.patch(`/teachers/${editingId}`, {
-          name: form.name,
-          email: form.email || null,
-          max_weekly_hours: form.max_weekly_hours ? parseInt(form.max_weekly_hours) : null,
-          notes: form.notes || null,
-        })
+      const payload = {
+        name: form.name,
+        email: form.email || null,
+        max_weekly_hours: form.max_weekly_hours
+          ? parseInt(form.max_weekly_hours)
+          : null,
+        notes: form.notes || null,
+      }
+
+      if (editing) {
+        await api.patch(`/teachers/${editing.id}`, payload)
+        alert('✏️ Docente actualizado correctamente.')
       } else {
-        await api.post('/teachers', {
-          name: form.name,
-          email: form.email || null,
-          max_weekly_hours: form.max_weekly_hours ? parseInt(form.max_weekly_hours) : null,
-          notes: form.notes || null,
-        })
+        await api.post('/teachers', payload)
+        alert('✅ Docente agregado exitosamente.')
       }
 
       setForm({ name: '', email: '', max_weekly_hours: '', notes: '' })
-      setEditingId(null)
+      setEditing(null)
+      setShowModal(false)
       fetchTeachers()
     } catch (err) {
       console.error('❌ Error guardando docente:', err)
-      setError('No se pudo guardar el docente. Verifica los datos o permisos.')
+      setError('❌ No se pudo guardar el docente. Verifica los datos o permisos.')
     }
   }
 
@@ -71,14 +87,16 @@ export default function Teachers() {
       max_weekly_hours: teacher.max_weekly_hours || '',
       notes: teacher.notes || '',
     })
-    setEditingId(teacher.id)
+    setEditing(teacher)
+    setShowModal(true)
   }
 
   // 🔹 Eliminar docente
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar este docente?')) return
+    if (!window.confirm('🗑️ ¿Eliminar este docente?')) return
     try {
       await api.delete(`/teachers/${id}`)
+      alert('🗑️ Docente eliminado correctamente.')
       fetchTeachers()
     } catch (err) {
       console.error('❌ Error al eliminar docente:', err)
@@ -86,117 +104,152 @@ export default function Teachers() {
     }
   }
 
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4 text-gray-800">👨‍🏫 Gestión de Docentes</h1>
-
-      {/* Formulario */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-gray-100 shadow-md p-4 rounded-xl mb-6 flex flex-wrap gap-3 border border-gray-200"
+  // 🔹 Acciones en tabla
+  const renderActions = (t) => (
+    <div className="flex justify-center gap-2">
+      <button
+        onClick={() => handleEdit(t)}
+        className="text-blue-600 hover:text-blue-800 transition"
+        title="Editar docente"
       >
-        <input
-          type="text"
-          name="name"
-          placeholder="Nombre"
-          value={form.name}
-          onChange={handleChange}
-          className="border border-gray-300 p-2 rounded-lg flex-1 focus:ring-2 focus:ring-blue-400"
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Correo electrónico"
-          value={form.email}
-          onChange={handleChange}
-          className="border border-gray-300 p-2 rounded-lg flex-1 focus:ring-2 focus:ring-blue-400"
-        />
-        <input
-          type="number"
-          name="max_weekly_hours"
-          placeholder="Horas máx. por semana"
-          value={form.max_weekly_hours}
-          onChange={handleChange}
-          className="border border-gray-300 p-2 rounded-lg flex-1 focus:ring-2 focus:ring-blue-400"
-        />
-        <input
-          type="text"
-          name="notes"
-          placeholder="Notas"
-          value={form.notes}
-          onChange={handleChange}
-          className="border border-gray-300 p-2 rounded-lg flex-1 focus:ring-2 focus:ring-blue-400"
-        />
+        ✏️
+      </button>
+      <button
+        onClick={() => handleDelete(t.id)}
+        className="text-red-600 hover:text-red-800 transition"
+        title="Eliminar docente"
+      >
+        🗑
+      </button>
+    </div>
+  )
 
-        <button
-          type="submit"
-          className={`px-5 py-2 rounded-lg text-white font-medium shadow-sm transition ${
-            editingId
-              ? 'bg-yellow-500 hover:bg-yellow-600'
-              : 'bg-blue-600 hover:bg-blue-700'
-          }`}
+  return (
+    <div className="p-6 animate-fadeIn">
+      {/* 🔹 Encabezado */}
+      <div className="flex justify-between items-center mb-6">
+        <SectionTitle title="👨‍🏫 Gestión de Docentes" />
+        <Button
+          onClick={() => {
+            setShowModal(true)
+            setEditing(null)
+            setForm({ name: '', email: '', max_weekly_hours: '', notes: '' })
+          }}
+          className="bg-blue-600 hover:bg-blue-700"
         >
-          {editingId ? 'Actualizar' : 'Agregar'}
-        </button>
-
-        {error && <p className="text-red-500 mt-2 w-full font-medium">{error}</p>}
-      </form>
-
-      {/* Tabla */}
-      <div className="bg-white shadow rounded-xl p-4 border border-gray-200">
-        <table className="w-full border-collapse">
-          <thead className="bg-gray-200 text-gray-700">
-            <tr>
-              <th className="border p-2 text-left">#</th>
-              <th className="border p-2 text-left">Nombre</th>
-              <th className="border p-2 text-left">Email</th>
-              <th className="border p-2 text-left">Horas</th>
-              <th className="border p-2 text-left">Notas</th>
-              <th className="border p-2 text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {teachers.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="text-center py-4 text-gray-500">
-                  No hay docentes registrados
-                </td>
-              </tr>
-            ) : (
-              teachers.map((t, i) => (
-                <tr
-                  key={t.id}
-                  className="border-t hover:bg-gray-50 transition text-gray-800"
-                >
-                  <td className="border p-2">{i + 1}</td>
-                  <td className="border p-2">{t.name}</td>
-                  <td className="border p-2">{t.email || '—'}</td>
-                  <td className="border p-2">{t.max_weekly_hours || '—'}</td>
-                  <td className="border p-2">{t.notes || '—'}</td>
-                  <td className="border p-2">
-                    <div className="flex items-center justify-center gap-3 py-1">
-                      <button
-                        onClick={() => handleEdit(t)}
-                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition"
-                        title="Editar docente"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(t.id)}
-                        className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition"
-                        title="Eliminar docente"
-                      >
-                        🗑
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+          + Nuevo Docente
+        </Button>
       </div>
+
+      {/* 🔹 Contenido principal */}
+      {loading ? (
+        <div className="text-center py-8 text-gray-500 animate-pulse">
+          Cargando docentes...
+        </div>
+      ) : teachers.length === 0 ? (
+        <div className="text-center py-10 bg-white rounded-xl shadow-sm text-gray-500">
+          No hay docentes registrados todavía.
+        </div>
+      ) : (
+        <div className="bg-white shadow-md rounded-xl overflow-hidden">
+          <Table
+            headers={['#', 'Nombre', 'Email', 'Horas/Semana', 'Notas', 'Acciones']}
+            data={teachers.map((t, i) => [
+              i + 1,
+              t.name,
+              t.email || '—',
+              t.max_weekly_hours || '—',
+              t.notes || '—',
+              renderActions(t),
+            ])}
+          />
+        </div>
+      )}
+
+      {/* 🔹 Modal Crear/Editar */}
+      <Modal
+        open={showModal}
+        title={editing ? 'Editar Docente' : 'Nuevo Docente'}
+        onClose={() => {
+          setShowModal(false)
+          setEditing(null)
+        }}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nombre */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">
+              Nombre completo
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              required
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+              placeholder="Ej: Juan Pérez"
+            />
+          </div>
+
+          {/* Correo */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">
+              Correo electrónico
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+              placeholder="Ej: docente@instituto.edu"
+            />
+          </div>
+
+          {/* Horas semanales */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">
+              Horas máximas por semana
+            </label>
+            <input
+              type="number"
+              name="max_weekly_hours"
+              value={form.max_weekly_hours}
+              onChange={handleChange}
+              min="0"
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+              placeholder="Ej: 20"
+            />
+          </div>
+
+          {/* Notas */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-600">
+              Notas
+            </label>
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleChange}
+              rows="2"
+              className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-100 p-2 rounded-md"
+              placeholder="Comentarios adicionales..."
+            />
+          </div>
+
+          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+
+          <Button
+            type="submit"
+            className={`w-full ${
+              editing ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-600 hover:bg-blue-700'
+            } transition`}
+          >
+            {editing ? 'Actualizar' : 'Guardar'}
+          </Button>
+        </form>
+      </Modal>
     </div>
   )
 }
