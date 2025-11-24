@@ -34,10 +34,14 @@ export default function Navbar() {
   })
 
   const toggleSection = (sectionTitle) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionTitle]: !prev[sectionTitle]
-    }))
+    // Solo permite toggle en secciones que tienen más de 1 item
+    const section = menuSections.find(sec => sec.title === sectionTitle)
+    if (section && section.items.length > 1) {
+      setExpandedSections(prev => ({
+        ...prev,
+        [sectionTitle]: !prev[sectionTitle]
+      }))
+    }
   }
 
   const linkClass = ({ isActive }) =>
@@ -110,11 +114,11 @@ export default function Navbar() {
   ]
 
   return (
-    <aside className={`bg-white min-h-screen shadow-xl border-r border-slate-200 flex flex-col justify-between transition-all duration-300 ${
+    <aside className={`bg-white min-h-screen shadow-xl border-r border-slate-200 flex flex-col transition-all duration-300 ${
       isCompact ? 'w-20' : 'w-80'
     }`}>
-      {/* Header */}
-      <div className="px-6 py-8 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/30">
+      {/* Header - Fijo */}
+      <div className="flex-shrink-0 px-6 py-8 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/30">
         <div className="flex items-center justify-between mb-3">
           <div className={`flex items-center gap-3 transition-all duration-300 ${
             isCompact ? 'justify-center w-full' : ''
@@ -155,116 +159,159 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto py-6">
+      {/* Navigation - Con scroll */}
+      <div className="flex-1 overflow-y-auto py-6 custom-scrollbar">
         <nav className="space-y-1 px-3">
           {menuSections.map((section, index) => {
             const isExpanded = expandedSections[section.title]
-            const hasItems = section.items.length > 1
-            
+            const hasMultipleItems = section.items.length > 1
+            const isPrincipalSection = section.title === "Principal"
+
             return (
               <div key={index}>
                 {isCompact ? (
                   <div className="relative">
-                    <button
-                      onClick={() => hasItems && toggleSection(section.title)}
-                      className={`flex items-center justify-center p-3 w-full rounded-xl transition-all duration-300 group relative ${
-                        hasItems 
-                          ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 cursor-pointer'
-                          : 'text-slate-700'
-                      }`}
-                    >
-                      <section.icon size={20} />
-                      {/* Indicador visual para desplegable */}
-                      {hasItems && (
-                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                      )}
-                      {/* Tooltip para modo compacto */}
-                      <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                        {section.title}
-                      </div>
-                    </button>
-                    
-                    {/* Expanded submenu en modo compacto */}
-                    {isExpanded && hasItems && (
-                      <div className="absolute left-full top-0 ml-1 bg-white rounded-xl shadow-xl border border-slate-300 py-2 min-w-48 z-40">
-                        <div className="px-3 py-2 border-b border-slate-200">
-                          <p className="text-xs font-semibold text-slate-600 uppercase">
-                            {section.title}
-                          </p>
+                    {isPrincipalSection ? (
+                      // Sección Principal - Solo navegación directa
+                      <NavLink
+                        to={section.items[0].to}
+                        className={compactLinkClass}
+                      >
+                        <section.icon size={20} />
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                          {section.title}
                         </div>
-                        {section.items.map((item, itemIndex) => {
-                          const Icon = item.icon
-                          return (
-                            <NavLink
-                              key={itemIndex}
-                              to={item.to}
-                              className={({ isActive }) => 
-                                `flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm transition-all duration-200 ${
-                                  isActive
-                                    ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-200'
-                                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                                }`
-                              }
-                            >
-                              <Icon size={18} />
-                              <span>{item.label}</span>
-                            </NavLink>
-                          )
-                        })}
-                      </div>
+                      </NavLink>
+                    ) : (
+                      // Otras secciones - Desplegables
+                      <>
+                        <button
+                          onClick={() => toggleSection(section.title)}
+                          className={`flex items-center justify-center p-3 w-full rounded-xl transition-all duration-300 group relative ${
+                            hasMultipleItems 
+                              ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 cursor-pointer'
+                              : 'text-slate-700'
+                          }`}
+                        >
+                          <section.icon size={20} />
+                          {/* Indicador visual para desplegable */}
+                          {hasMultipleItems && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                          )}
+                          {/* Tooltip para modo compacto */}
+                          <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                            {section.title}
+                          </div>
+                        </button>
+                        
+                        {/* Expanded submenu en modo compacto */}
+                        {isExpanded && hasMultipleItems && (
+                          <div className="absolute left-full top-0 ml-1 bg-white rounded-xl shadow-xl border border-slate-300 py-2 min-w-48 z-40">
+                            <div className="px-3 py-2 border-b border-slate-200">
+                              <p className="text-xs font-semibold text-slate-600 uppercase">
+                                {section.title}
+                              </p>
+                            </div>
+                            {section.items.map((item, itemIndex) => {
+                              const Icon = item.icon
+                              return (
+                                <NavLink
+                                  key={itemIndex}
+                                  to={item.to}
+                                  className={({ isActive }) => 
+                                    `flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm transition-all duration-200 ${
+                                      isActive
+                                        ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-200'
+                                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                                    }`
+                                  }
+                                >
+                                  <Icon size={18} />
+                                  <span>{item.label}</span>
+                                </NavLink>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (
+                  // MODO EXPANDIDO
                   <>
-                    {/* Sección con indicador visual claro de desplegable */}
-                    <div className={`flex items-center justify-between w-full px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider transition-all duration-300 cursor-pointer group ${
-                      hasItems ? 'hover:bg-slate-100 hover:text-slate-800 rounded-xl' : ''
-                    }`}
-                    onClick={() => hasItems && toggleSection(section.title)}
-                    >
-                      <span className="flex items-center gap-2">
-                        <section.icon size={16} className="text-slate-500" />
-                        {section.title}
-                      </span>
-                      
-                      {/* Indicador visual mejorado para desplegable */}
-                      {hasItems && (
-                        <div className="flex items-center gap-1">
-                          <div className={`w-1.5 h-1.5 bg-blue-500 rounded-full transition-all duration-300 ${
-                            isExpanded ? 'opacity-100' : 'opacity-60'
-                          }`}></div>
-                          <ChevronDown 
-                            size={14} 
-                            className={`text-slate-500 transition-transform duration-300 ${
-                              isExpanded ? 'rotate-180 text-blue-500' : 'group-hover:text-slate-700'
-                            }`} 
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Items de la sección */}
-                    <div className={`space-y-1 transition-all duration-300 overflow-hidden ${
-                      isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                    }`}>
-                      {section.items.map((item, itemIndex) => {
-                        const Icon = item.icon
-                        return (
-                          <NavLink
-                            key={itemIndex}
-                            to={item.to}
-                            className={linkClass}
-                          >
-                            <div className="w-8 h-8 flex items-center justify-center bg-slate-100 group-hover:bg-blue-100 group-[.active]:bg-white/20 rounded-lg transition-colors">
-                              <Icon size={18} className="text-slate-600 group-hover:text-slate-800" />
+                    {isPrincipalSection ? (
+                      // Sección Principal - Solo navegación directa
+                      <NavLink
+                        to={section.items[0].to}
+                        className={({ isActive }) => 
+                          `flex items-center justify-between w-full px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider transition-all duration-300 group rounded-xl ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'hover:bg-slate-100 hover:text-slate-800'
+                          }`
+                        }
+                      >
+                        <span className="flex items-center gap-2">
+                          <section.icon size={16} />
+                          {section.title}
+                        </span>
+                        <ChevronRight size={14} className="text-slate-500 group-hover:text-slate-700 transition-transform duration-300" />
+                      </NavLink>
+                    ) : (
+                      // Otras secciones - Desplegables
+                      <>
+                        <div 
+                          className={`flex items-center justify-between w-full px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider transition-all duration-300 cursor-pointer group ${
+                            hasMultipleItems ? 'hover:bg-slate-100 hover:text-slate-800 rounded-xl' : ''
+                          }`}
+                          onClick={() => toggleSection(section.title)}
+                        >
+                          <span className="flex items-center gap-2">
+                            <section.icon size={16} className="text-slate-500" />
+                            {section.title}
+                          </span>
+                          
+                          {/* Indicador visual mejorado para desplegable */}
+                          {hasMultipleItems && (
+                            <div className="flex items-center gap-1">
+                              <div className={`w-1.5 h-1.5 bg-blue-500 rounded-full transition-all duration-300 ${
+                                isExpanded ? 'opacity-100' : 'opacity-60'
+                              }`}></div>
+                              <ChevronDown 
+                                size={14} 
+                                className={`text-slate-500 transition-transform duration-300 ${
+                                  isExpanded ? 'rotate-180 text-blue-500' : 'group-hover:text-slate-700'
+                                }`} 
+                              />
                             </div>
-                            <span className="flex-1 text-slate-700">{item.label}</span>
-                            <ChevronRight size={16} className="text-slate-500 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-transform" />
-                          </NavLink>
-                        )
-                      })}
-                    </div>
+                          )}
+                        </div>
+
+                        {/* Items de la sección */}
+                        {hasMultipleItems && (
+                          <div className={`space-y-1 transition-all duration-300 overflow-hidden ${
+                            isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                          }`}>
+                            {section.items.map((item, itemIndex) => {
+                              const Icon = item.icon
+                              return (
+                                <NavLink
+                                  key={itemIndex}
+                                  to={item.to}
+                                  className={linkClass}
+                                >
+                                  <div className="w-8 h-8 flex items-center justify-center bg-slate-100 group-hover:bg-blue-100 group-[.active]:bg-white/20 rounded-lg transition-colors">
+                                    <Icon size={18} className="text-slate-600 group-hover:text-slate-800" />
+                                  </div>
+                                  <span className="flex-1 text-slate-700">{item.label}</span>
+                                  <ChevronRight size={16} className="text-slate-500 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-transform" />
+                                </NavLink>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -273,8 +320,8 @@ export default function Navbar() {
         </nav>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-slate-300 bg-slate-50/50">
+      {/* Footer - Fijo */}
+      <div className="flex-shrink-0 p-4 border-t border-slate-300 bg-slate-50/50">
         {/* Logout Button */}
         {isCompact ? (
           <button
@@ -307,6 +354,24 @@ export default function Navbar() {
           </div>
         )}
       </div>
+
+      {/* Estilos para el scroll personalizado */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
     </aside>
   )
 }
