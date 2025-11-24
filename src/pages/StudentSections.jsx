@@ -3,8 +3,9 @@ import {
   getStudentSections,
   createStudentSection,
   deleteStudentSection,
+  updateStudentSection,
 } from '../api/studentSections';
-import api from '../api/axios'; // para obtener estudiantes y secciones
+import api from '../api/axios';
 import Button from '../components/Button';
 import Table from '../components/Table';
 import Modal from '../components/Modal';
@@ -17,8 +18,13 @@ export default function StudentSections() {
   const [students, setStudents] = useState([]);
   const [sections, setSections] = useState([]);
   const [showModal, setShowModal] = useState(false);
+
   const [form, setForm] = useState({ studentId: '', sectionId: '' });
-  const [searchTerm, setSearchTerm] = useState('')
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 🔹 PARA EDITAR
+  const [editingId, setEditingId] = useState(null);
 
   // 🔹 Cargar asignaciones
   const loadRelations = async () => {
@@ -45,20 +51,60 @@ export default function StudentSections() {
     loadRelations();
   }, []);
 
+  // =====================================================
+  // 🔹 NUEVA ASIGNACIÓN
+  // =====================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.studentId || !form.sectionId) return alert('Seleccione estudiante y sección.');
+    if (!form.studentId || !form.sectionId)
+      return alert('Seleccione estudiante y sección.');
+
+    if (editingId) {
+      await handleUpdate();
+      return;
+    }
+
     await createStudentSection(form);
     setForm({ studentId: '', sectionId: '' });
     setShowModal(false);
     loadRelations();
   };
 
+  // =====================================================
+  // 🔹 ELIMINAR
+  // =====================================================
   const handleDelete = async (id) => {
     if (window.confirm('¿Eliminar asignación?')) {
       await deleteStudentSection(id);
       loadRelations();
     }
+  };
+
+  // =====================================================
+  // 🔹 EDITAR: abrir modal con datos
+  // =====================================================
+  const handleEdit = (r) => {
+    setEditingId(r.id);
+    setForm({
+      studentId: r.student?.id || '',
+      sectionId: r.section?.id || '',
+    });
+    setShowModal(true);
+  };
+
+  // =====================================================
+  // 🔹 ACTUALIZAR (PATCH)
+  // =====================================================
+  const handleUpdate = async () => {
+    await updateStudentSection(editingId, {
+      studentId: form.studentId,
+      sectionId: form.sectionId,
+    });
+
+    setEditingId(null);
+    setShowModal(false);
+    setForm({ studentId: '', sectionId: '' });
+    loadRelations();
   };
 
   return (
@@ -88,7 +134,9 @@ export default function StudentSections() {
               <Filter size={18} />
               <span>Filtros</span>
             </button>
-            <Button onClick={() => setShowModal(true)}>+ Nueva Asignación</Button>
+            <Button onClick={() => { setEditingId(null); setForm({ studentId: '', sectionId: '' }); setShowModal(true); }}>
+              + Nueva Asignación
+            </Button>
           </div>
         </div>
 
@@ -97,32 +145,48 @@ export default function StudentSections() {
           headers={['Estudiante', 'Sección', 'Acciones']}
           data={relations
             .filter(r => {
-              if (!searchTerm) return true
-              const q = searchTerm.toLowerCase()
-              return (r.student?.name || '').toLowerCase().includes(q) || (r.section?.code || '').toLowerCase().includes(q)
+              if (!searchTerm) return true;
+              const q = searchTerm.toLowerCase();
+              return (
+                (r.student?.name || '').toLowerCase().includes(q) ||
+                (r.section?.code || '').toLowerCase().includes(q)
+              );
             })
             .map((r) => [
               r.student?.name || '—',
               r.section?.code || '—',
               <div className="flex gap-2">
+
+                {/* 🔵 BOTÓN EDITAR */}
+                <button
+                  onClick={() => handleEdit(r)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 transition-colors"
+                >
+                  Editar
+                </button>
+
+                {/* 🔴 BOTÓN ELIMINAR */}
                 <button
                   onClick={() => handleDelete(r.id)}
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
                 >
                   Eliminar
                 </button>
+
               </div>,
             ])}
         />
       </Card>
 
-      {/* Modal de creación */}
+      {/* Modal de creación / edición */}
       <Modal
         open={showModal}
-        title="Nueva Asignación"
-        onClose={() => setShowModal(false)}
+        title={editingId ? "Editar Asignación" : "Nueva Asignación"}
+        onClose={() => { setShowModal(false); setEditingId(null); }}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* Estudiante */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Estudiante</label>
             <select
@@ -140,6 +204,7 @@ export default function StudentSections() {
             </select>
           </div>
 
+          {/* Sección */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Sección</label>
             <select
@@ -157,12 +222,21 @@ export default function StudentSections() {
             </select>
           </div>
 
+          {/* Botones */}
           <div className="flex gap-2">
-            <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-3 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={() => { setShowModal(false); setEditingId(null); }}
+              className="flex-1 px-4 py-3 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50"
+            >
               Cancelar
             </button>
-            <button type="submit" className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl">
-              Asignar Estudiante
+
+            <button
+              type="submit"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl"
+            >
+              {editingId ? "Actualizar Asignación" : "Asignar Estudiante"}
             </button>
           </div>
         </form>

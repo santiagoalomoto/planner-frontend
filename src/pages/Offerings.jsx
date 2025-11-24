@@ -6,7 +6,7 @@ import Button from '../components/Button'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
 import Input from '../components/Input'
-import api from '../api/axios' // ✅ Se usa la instancia con token
+import api from '../api/axios'
 
 const API = '/offerings'
 const COURSES_API = '/courses'
@@ -18,7 +18,10 @@ export default function Offerings() {
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // 📋 Datos para selects
+  // Para EDITAR
+  const [editingId, setEditingId] = useState(null)
+
+  // Datos selects
   const [courses, setCourses] = useState([])
   const [semesters, setSemesters] = useState([])
   const [teachers, setTeachers] = useState([])
@@ -30,21 +33,21 @@ export default function Offerings() {
     expected_students: '',
   })
 
-  // 🔄 Obtener ofertas
+  // ============================
+  //   CARGA DE LISTAS
+  // ============================
   const getOfferings = async () => {
     setLoading(true)
     try {
       const res = await api.get(API)
       setOfferings(res.data)
     } catch (err) {
-      console.error('❌ Error al obtener ofertas:', err)
       alert('No se pudieron cargar las ofertas.')
     } finally {
       setLoading(false)
     }
   }
 
-  // 📦 Obtener datos para selects
   const getSelectData = async () => {
     try {
       const [coursesRes, semestersRes, teachersRes] = await Promise.all([
@@ -56,28 +59,35 @@ export default function Offerings() {
       setSemesters(semestersRes.data)
       setTeachers(teachersRes.data)
     } catch (err) {
-      console.error('❌ Error cargando datos de selects:', err)
+      console.error('Error en selects')
     }
   }
 
-  // ✍️ Manejar cambios del formulario
+  useEffect(() => {
+    getOfferings()
+    getSelectData()
+  }, [])
+
+  // ============================
+  //    FORM CHANGE
+  // ============================
   const handleChange = e => {
     const { name, value } = e.target
     setForm({ ...form, [name]: value })
   }
 
-  // 💾 Guardar nueva oferta
+  // ============================
+  //     CREAR OFERTA
+  // ============================
   const handleSubmit = async () => {
-    if (!form.courseId || !form.semesterId) {
-      alert('Los campos de curso y semestre son obligatorios.')
-      return
-    }
+    if (!form.courseId || !form.semesterId) return alert("Curso y semestre son obligatorios")
 
     try {
       await api.post(API, {
         ...form,
-        expected_students: Number(form.expected_students) || 0,
+        expected_students: Number(form.expected_students) || 0
       })
+
       setModalOpen(false)
       setForm({
         courseId: '',
@@ -87,41 +97,71 @@ export default function Offerings() {
       })
       getOfferings()
     } catch (err) {
-      console.error('❌ Error al crear oferta:', err)
-      alert('No se pudo crear la oferta.')
+      alert("No se pudo crear la oferta")
     }
   }
 
-  // 🗑️ Eliminar oferta
+  // ============================
+  //     ELIMINAR
+  // ============================
   const handleDelete = async id => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta oferta?')) return
+    if (!window.confirm("¿Eliminar oferta?")) return
     try {
       await api.delete(`${API}/${id}`)
       getOfferings()
     } catch (err) {
-      console.error('❌ Error al eliminar oferta:', err)
-      alert('No se pudo eliminar la oferta.')
+      alert("No se pudo eliminar")
     }
   }
 
-  // 🚀 Al montar el componente
-  useEffect(() => {
-    getOfferings()
-    getSelectData()
-  }, [])
+  // ============================
+  //     EDITAR (ABRIR MODAL)
+  // ============================
+  const handleEdit = (off) => {
+    setEditingId(off.id)
+    setForm({
+      courseId: off.course?.id || "",
+      semesterId: off.semester?.id || "",
+      teacherId: off.teacher?.id || "",
+      expected_students: off.expected_students || 0,
+    })
+    setModalOpen(true)
+  }
 
-  // Estado visual (badge)
+  // ============================
+  //     ACTUALIZAR OFERTA
+  // ============================
+  const handleUpdate = async () => {
+    try {
+      await api.patch(`${API}/${editingId}`, {
+        ...form,
+        expected_students: Number(form.expected_students) || 0,
+      })
+
+      setModalOpen(false)
+      setEditingId(null)
+
+      setForm({
+        courseId: '',
+        semesterId: '',
+        teacherId: '',
+        expected_students: '',
+      })
+
+      getOfferings()
+    } catch (err) {
+      alert("No se pudo actualizar la oferta")
+    }
+  }
+
+  // BADGE
   const renderStatusBadge = (status) => {
     const map = {
       active: { text: 'Activo', className: 'bg-gradient-to-r from-green-500 to-green-600 text-white', dot: 'bg-green-300' },
-      // Cambiado: `draft` ahora muestra 'Registrado' con estilo simple y sin animación
       draft: { text: 'Registrado', className: 'bg-blue-100 text-blue-700 border border-blue-200', dot: 'bg-blue-300' },
       inactive: { text: 'Inactivo', className: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white', dot: 'bg-gray-300' },
     }
-
     const badge = map[status] || map.draft
-
-    // Para estados con estilos simples (como Registrado) no aplicamos sombra ni pulso
     const simple = badge.className.includes('bg-blue-100')
 
     return (
@@ -134,13 +174,14 @@ export default function Offerings() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6 space-y-6">
+
       <SectionTitle
         icon={Calendar}
         title="Gestión de Ofertas de Curso"
-        subtitle="Administra las asignaciones de cursos, semestres y docentes"
+        subtitle="Administra cursos, semestres y docentes"
       />
 
-      {/* Stats */}
+      {/* CARD CON TOTALIZADORES */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-5 border border-blue-200 shadow-lg">
           <div className="flex items-center justify-between">
@@ -179,15 +220,14 @@ export default function Offerings() {
         </div>
       </div>
 
+      {/* TABLA */}
       <Card>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
             <h3 className="text-2xl font-bold text-slate-800">Ofertas registradas</h3>
-            <p className="text-sm text-slate-500">Lista de ofertas de curso disponibles en el sistema</p>
+            <p className="text-sm text-slate-500">Lista de ofertas creadas</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={() => setModalOpen(true)}>+ Nueva Oferta</Button>
-          </div>
+          <Button onClick={() => setModalOpen(true)}>+ Nueva Oferta</Button>
         </div>
 
         <Table
@@ -199,6 +239,16 @@ export default function Offerings() {
             off.expected_students ?? 0,
             renderStatusBadge((off.status || 'draft').toLowerCase()),
             <div className="flex gap-2">
+
+              {/* BOTÓN EDITAR */}
+              <button
+                onClick={() => handleEdit(off)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 transition-colors"
+              >
+                Editar
+              </button>
+
+              {/* BOTÓN ELIMINAR */}
               <button
                 onClick={() => handleDelete(off.id)}
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
@@ -211,70 +261,58 @@ export default function Offerings() {
         />
       </Card>
 
-      {/* 🧩 Modal de creación */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva Oferta">
+      {/* MODAL CREAR / EDITAR */}
+      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setEditingId(null); }} title={editingId ? "Editar Oferta" : "Nueva Oferta"}>
         <div className="space-y-4">
-          {/* Select de cursos */}
+
+          {/* Curso */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Curso
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Curso</label>
             <select
               name="courseId"
               value={form.courseId}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 border border-slate-200 rounded-lg"
             >
               <option value="">Seleccione un curso</option>
               {courses.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
 
-          {/* Select de semestres */}
+          {/* Semestre */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Semestre
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Semestre</label>
             <select
               name="semesterId"
               value={form.semesterId}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 border border-slate-200 rounded-lg"
             >
               <option value="">Seleccione un semestre</option>
               {semesters.map(s => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
 
-          {/* Select de docentes */}
+          {/* Docente */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Docente (opcional)
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Docente (opcional)</label>
             <select
               name="teacherId"
               value={form.teacherId}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 border border-slate-200 rounded-lg"
             >
               <option value="">(Sin asignar)</option>
               {teachers.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
+                <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
           </div>
 
-          {/* Campo de número */}
           <Input
             type="number"
             label="Estudiantes esperados"
@@ -285,10 +323,16 @@ export default function Offerings() {
           />
 
           <div className="flex justify-end gap-2 mt-4">
-            <Button color="secondary" onClick={() => setModalOpen(false)}>
+            <Button color="secondary" onClick={() => { setModalOpen(false); setEditingId(null); }}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit}>Guardar</Button>
+
+            {/* 🔥 CAMBIO SOLO AQUÍ */}
+            {editingId ? (
+              <Button onClick={handleUpdate}>Actualizar</Button>
+            ) : (
+              <Button onClick={handleSubmit}>Guardar</Button>
+            )}
           </div>
         </div>
       </Modal>

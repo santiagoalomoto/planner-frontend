@@ -95,7 +95,6 @@ export default function Navbar() {
         { to: "/dashboard/rooms", icon: Building2, label: "Salas" },
         { to: "/dashboard/timeslots", icon: Clock, label: "Franjas Horarias" },
         { to: "/dashboard/schedules", icon: Clock, label: "Horarios" },
-        { to: "/dashboard/room-map", icon: MapPin, label: "Mapa" }
       ]
     },
     {

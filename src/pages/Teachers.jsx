@@ -3,11 +3,21 @@ import api from '../api/axios'
 import SectionTitle from '../components/SectionTitle'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import Modal from '../components/Modal'
 import { Users } from 'lucide-react'
 
 export default function Teachers() {
   const [teachers, setTeachers] = useState([])
   const [form, setForm] = useState({ name: '', email: '', max_weekly_hours: '', notes: '' })
+
+  // 🔹 Estado para editar
+  const [editing, setEditing] = useState(null) // guarda el teacher que se está editando
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    max_weekly_hours: '',
+    notes: '',
+  })
 
   // 🔹 Cargar docentes
   const fetchTeachers = async () => {
@@ -23,7 +33,7 @@ export default function Teachers() {
     fetchTeachers()
   }, [])
 
-  // 🔹 Manejo de formulario
+  // 🔹 Manejo de formulario (crear)
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
@@ -43,7 +53,7 @@ export default function Teachers() {
       fetchTeachers()
     } catch (err) {
       console.error('❌ Error creando docente:', err)
-      alert('No se pudo crear el docente. Verifica los datos o los permisos.')
+      alert('No se pudo crear el docente.')
     }
   }
 
@@ -58,10 +68,44 @@ export default function Teachers() {
     }
   }
 
+  // ============================================
+  // 🔹 EDITAR DOCENTE
+  // ============================================
+
+  const handleEdit = (teacher) => {
+    setEditing(teacher)
+    setEditForm({
+      name: teacher.name,
+      email: teacher.email || '',
+      max_weekly_hours: teacher.max_weekly_hours || '',
+      notes: teacher.notes || '',
+    })
+  }
+
+  const handleUpdate = async (e) => {
+    e.preventDefault()
+    try {
+      await api.patch(`/teachers/${editing.id}`, {
+        name: editForm.name,
+        email: editForm.email || null,
+        max_weekly_hours: editForm.max_weekly_hours
+          ? parseInt(editForm.max_weekly_hours)
+          : null,
+        notes: editForm.notes || null,
+      })
+      setEditing(null)
+      fetchTeachers()
+    } catch (err) {
+      console.error('❌ Error actualizando docente:', err)
+      alert('No se pudo actualizar el docente.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6 space-y-6">
       <SectionTitle icon={Users} title="Gestión de Docentes" subtitle="Administra los docentes del sistema" />
 
+      {/* ================= FORM CREAR ================= */}
       <Card>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <input
@@ -100,19 +144,23 @@ export default function Teachers() {
               onChange={handleChange}
               className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
-            <button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all">
+            <button
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all"
+            >
               Agregar
             </button>
           </div>
         </form>
       </Card>
 
+      {/* ================= TABLA ================= */}
       <Card>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-                <tr className="bg-slate-100">
-                  <th className="border p-3 text-left text-sm text-slate-600 w-14">N°</th>
+              <tr className="bg-slate-100">
+                <th className="border p-3 text-left text-sm text-slate-600 w-14">N°</th>
                 <th className="border p-3 text-left text-sm text-slate-600">Nombre</th>
                 <th className="border p-3 text-left text-sm text-slate-600">Email</th>
                 <th className="border p-3 text-left text-sm text-slate-600">Horas</th>
@@ -120,19 +168,31 @@ export default function Teachers() {
                 <th className="border p-3 text-left text-sm text-slate-600">Acciones</th>
               </tr>
             </thead>
+
             <tbody>
               {teachers.map((t, i) => (
-                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="border p-3 text-sm">
-                      <div className="inline-flex items-center justify-center w-8 h-8 bg-slate-100 text-slate-700 rounded-full font-medium">
-                        {i + 1}
-                      </div>
-                    </td>
+                <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="border p-3 text-sm">
+                    <div className="inline-flex items-center justify-center w-8 h-8 bg-slate-100 text-slate-700 rounded-full font-medium">
+                      {i + 1}
+                    </div>
+                  </td>
+
                   <td className="border p-3 text-sm">{t.name}</td>
                   <td className="border p-3 text-sm text-slate-600">{t.email || '—'}</td>
                   <td className="border p-3 text-sm text-slate-600">{t.max_weekly_hours || '—'}</td>
                   <td className="border p-3 text-sm text-slate-600">{t.notes || '—'}</td>
-                  <td className="border p-3 text-sm">
+
+                  <td className="border p-3 text-sm flex gap-2">
+                    {/* BOTÓN EDITAR */}
+                    <button
+                      onClick={() => handleEdit(t)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-700 border border-yellow-200 hover:bg-yellow-200 transition-colors"
+                    >
+                      Editar
+                    </button>
+
+                    {/* BOTÓN ELIMINAR */}
                     <button
                       onClick={() => handleDelete(t.id)}
                       className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
@@ -143,9 +203,70 @@ export default function Teachers() {
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
       </Card>
+
+      {/* ================= MODAL EDITAR ================= */}
+      <Modal
+        open={!!editing}
+        title="Editar Docente"
+        onClose={() => setEditing(null)}
+      >
+        <form onSubmit={handleUpdate} className="space-y-4">
+
+          <input
+            type="text"
+            placeholder="Nombre"
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            className="w-full px-4 py-3 border border-slate-200 rounded-lg"
+          />
+
+          <input
+            type="email"
+            placeholder="Correo electrónico"
+            value={editForm.email}
+            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+            className="w-full px-4 py-3 border border-slate-200 rounded-lg"
+          />
+
+          <input
+            type="number"
+            placeholder="Horas máx. por semana"
+            value={editForm.max_weekly_hours}
+            onChange={(e) => setEditForm({ ...editForm, max_weekly_hours: e.target.value })}
+            className="w-full px-4 py-3 border border-slate-200 rounded-lg"
+          />
+
+          <input
+            type="text"
+            placeholder="Notas"
+            value={editForm.notes}
+            onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+            className="w-full px-4 py-3 border border-slate-200 rounded-lg"
+          />
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(null)}
+              className="flex-1 px-4 py-3 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl"
+            >
+              Actualizar
+            </button>
+          </div>
+        </form>
+      </Modal>
+
     </div>
   )
 }
