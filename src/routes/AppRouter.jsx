@@ -25,7 +25,8 @@ import Users from '../pages/Users';
 import Timeslots from '../pages/Timeslots';
 import Enrollments from '../pages/Enrollments';
 import AuditLogs from '../pages/AuditLogs';
-import Conflicts from '../pages/conflicts';
+import Conflicts from '../pages/Conflicts';
+import RoomMap from '../pages/RoomMap';
 import Settings from '../pages/Settings'; // ✅ Corregido (asegúrate de tener src/pages/Settings.jsx)
 
 // 🧱 Layout del panel
@@ -136,7 +137,17 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       />
-
+          {/* 🔹 Mapa */}
+      <Route
+        path="/dashboard/room-map"
+        element={
+          <ProtectedRoute roles={['admin', 'coordinator']}>
+            <DashboardLayout>
+              <RoomMap />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
       {/* 🔹 Usuarios */}
       <Route
         path="/dashboard/users"

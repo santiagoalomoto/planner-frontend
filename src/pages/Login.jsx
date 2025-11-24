@@ -1,8 +1,7 @@
 import React, { useState, useContext } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthContext } from '../context/AuthContext'
-import { LogIn, User, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react'
-import logoYavirac from '../assets/logo-yavirac.jpg'
+import { LogIn, User, Lock, AlertCircle, Eye, EyeOff, Building2 } from 'lucide-react'
 
 export default function Login() {
   const { login } = useContext(AuthContext)
@@ -29,21 +28,17 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 p-4">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 -left-4 w-72 h-72 bg-orange-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-orange-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Login Card */}
       <div className="relative w-full max-w-md">
-        {/* Logo/Brand Section - HORIZONTAL */}
+        {/* Logo/Brand Section - HORIZONTAL CON ICONO AZUL */}
         <div className="flex items-center gap-4 mb-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-          <div className="w-16 h-16 bg-white rounded-xl shadow-xl p-2 flex-shrink-0">
-            <img 
-              src={logoYavirac} 
-              alt="YAVIRAC Logo" 
-              className="w-full h-full object-contain"
-            />
+          <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl shadow-xl flex items-center justify-center flex-shrink-0">
+            <Building2 className="text-white" size={26} strokeWidth={2.5} />
           </div>
           <div className="flex-1 text-left">
             <h1 className="text-2xl font-bold text-white drop-shadow-lg leading-tight">Sistema de Planificación</h1>
