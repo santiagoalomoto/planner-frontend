@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Card from '../components/Card'
 import SectionTitle from '../components/SectionTitle'
+import { Calendar } from 'lucide-react'
 import Button from '../components/Button'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
@@ -109,17 +110,84 @@ export default function Offerings() {
     getSelectData()
   }, [])
 
+  // Estado visual (badge)
+  const renderStatusBadge = (status) => {
+    const map = {
+      active: { text: 'Activo', className: 'bg-gradient-to-r from-green-500 to-green-600 text-white', dot: 'bg-green-300' },
+      // Cambiado: `draft` ahora muestra 'Registrado' con estilo simple y sin animación
+      draft: { text: 'Registrado', className: 'bg-blue-100 text-blue-700 border border-blue-200', dot: 'bg-blue-300' },
+      inactive: { text: 'Inactivo', className: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white', dot: 'bg-gray-300' },
+    }
+
+    const badge = map[status] || map.draft
+
+    // Para estados con estilos simples (como Registrado) no aplicamos sombra ni pulso
+    const simple = badge.className.includes('bg-blue-100')
+
+    return (
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${badge.className} ${simple ? '' : 'shadow-lg'}`}>
+        {simple ? null : <div className={`w-2 h-2 rounded-full ${badge.dot} animate-pulse`}></div>}
+        <span>{badge.text}</span>
+      </div>
+    )
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6 space-y-6">
       <SectionTitle
+        icon={Calendar}
         title="Gestión de Ofertas de Curso"
         subtitle="Administra las asignaciones de cursos, semestres y docentes"
       />
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-5 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-600 text-sm font-medium mb-1">Total Ofertas</p>
+              <p className="text-3xl font-bold text-blue-700">{offerings.length}</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold">OF</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 border border-green-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-600 text-sm font-medium mb-1">Asignadas</p>
+              <p className="text-3xl font-bold text-green-700">{offerings.filter(o => o.teacher).length}</p>
+            </div>
+            <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white">T</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-5 border border-orange-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-600 text-sm font-medium mb-1">Sin Asignar</p>
+              <p className="text-3xl font-bold text-orange-700">{offerings.filter(o => !o.teacher).length}</p>
+            </div>
+            <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Card>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Ofertas registradas</h3>
-          <Button onClick={() => setModalOpen(true)}>+ Nueva Oferta</Button>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-2xl font-bold text-slate-800">Ofertas registradas</h3>
+            <p className="text-sm text-slate-500">Lista de ofertas de curso disponibles en el sistema</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button onClick={() => setModalOpen(true)}>+ Nueva Oferta</Button>
+          </div>
         </div>
 
         <Table
@@ -129,15 +197,14 @@ export default function Offerings() {
             off.semester?.name || '-',
             off.teacher?.name || '(Sin asignar)',
             off.expected_students ?? 0,
-            off.status || 'Activo',
+            renderStatusBadge((off.status || 'draft').toLowerCase()),
             <div className="flex gap-2">
-              <Button
-                color="danger"
-                size="sm"
+              <button
                 onClick={() => handleDelete(off.id)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
               >
                 Eliminar
-              </Button>
+              </button>
             </div>,
           ])}
           loading={loading}
@@ -149,14 +216,14 @@ export default function Offerings() {
         <div className="space-y-4">
           {/* Select de cursos */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Curso
             </label>
             <select
               name="courseId"
               value={form.courseId}
               onChange={handleChange}
-              className="w-full border rounded-lg p-2 outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
               <option value="">Seleccione un curso</option>
               {courses.map(c => (
@@ -169,14 +236,14 @@ export default function Offerings() {
 
           {/* Select de semestres */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Semestre
             </label>
             <select
               name="semesterId"
               value={form.semesterId}
               onChange={handleChange}
-              className="w-full border rounded-lg p-2 outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
               <option value="">Seleccione un semestre</option>
               {semesters.map(s => (
@@ -189,14 +256,14 @@ export default function Offerings() {
 
           {/* Select de docentes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Docente (opcional)
             </label>
             <select
               name="teacherId"
               value={form.teacherId}
               onChange={handleChange}
-              className="w-full border rounded-lg p-2 outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
               <option value="">(Sin asignar)</option>
               {teachers.map(t => (

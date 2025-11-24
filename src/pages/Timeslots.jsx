@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
+import SectionTitle from '../components/SectionTitle'
+import Card from '../components/Card'
+import Button from '../components/Button'
+import { Clock } from 'lucide-react'
 
 const API_URL = 'http://localhost:3000/api/timeslots';
 
@@ -13,11 +17,6 @@ export default function Timeslots() {
   });
   const [editingId, setEditingId] = useState(null);
 
-  // 🔹 Cargar los timeslots al montar
-  useEffect(() => {
-    fetchTimeslots();
-  }, []);
-
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
@@ -25,7 +24,7 @@ export default function Timeslots() {
     };
   };
 
-  const fetchTimeslots = async () => {
+  const fetchTimeslots = useCallback(async () => {
     try {
       const res = await axios.get(API_URL, getAuthHeaders());
       setTimeslots(res.data);
@@ -33,7 +32,12 @@ export default function Timeslots() {
       console.error('Error al obtener timeslots:', err);
       alert('No se pudieron cargar los horarios.');
     }
-  };
+  }, []);
+
+  // 🔹 Cargar los timeslots al montar
+  useEffect(() => {
+    fetchTimeslots();
+  }, [fetchTimeslots]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -98,12 +102,13 @@ export default function Timeslots() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">🕓 Gestión de Timeslots</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6 space-y-6">
+      <SectionTitle icon={Clock} title="Gestión de Timeslots" subtitle="Configura los horarios disponibles" />
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-4 mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <Card>
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <label className="block font-semibold">Día de la semana</label>
             <input
@@ -114,7 +119,7 @@ export default function Timeslots() {
               value={form.day_of_week}
               onChange={handleChange}
               required
-              className="border rounded w-full p-2"
+              className="border rounded-lg w-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -125,7 +130,7 @@ export default function Timeslots() {
               value={form.start_time}
               onChange={handleChange}
               required
-              className="border rounded w-full p-2"
+              className="border rounded-lg w-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -136,7 +141,7 @@ export default function Timeslots() {
               value={form.end_time}
               onChange={handleChange}
               required
-              className="border rounded w-full p-2"
+              className="border rounded-lg w-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -148,63 +153,59 @@ export default function Timeslots() {
               value={form.duration_minutes}
               onChange={handleChange}
               required
-              className="border rounded w-full p-2"
+              className="border rounded-lg w-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
+          <div className="mt-4">
+            <button
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow hover:shadow-lg transition"
+            >
+              {editingId ? 'Actualizar Timeslot' : 'Agregar Timeslot'}
+            </button>
+          </div>
+        </form>
+      </Card>
 
-        <button
-          type="submit"
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          {editingId ? 'Actualizar Timeslot' : 'Agregar Timeslot'}
-        </button>
-      </form>
+      {/* Tarjetas de timeslots (estilo Courses) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {timeslots.length > 0 ? (
+          timeslots.map((t) => (
+            <div key={t.id} className="bg-white rounded-2xl p-5 shadow-lg border border-slate-100">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="inline-flex items-center gap-2 mb-2">
+                    <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">{t.day_of_week}</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-800">Día {t.day_of_week}</h3>
+                  <p className="text-sm text-slate-500 mt-1">{t.start_time} — {t.end_time}</p>
+                </div>
+              </div>
 
-      {/* Tabla */}
-      <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="py-2 px-3 text-left">Día</th>
-            <th className="py-2 px-3 text-left">Inicio</th>
-            <th className="py-2 px-3 text-left">Fin</th>
-            <th className="py-2 px-3 text-left">Duración</th>
-            <th className="py-2 px-3 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {timeslots.length > 0 ? (
-            timeslots.map((t) => (
-              <tr key={t.id} className="border-t hover:bg-gray-50">
-                <td className="py-2 px-3">{t.day_of_week}</td>
-                <td className="py-2 px-3">{t.start_time}</td>
-                <td className="py-2 px-3">{t.end_time}</td>
-                <td className="py-2 px-3">{t.duration_minutes}</td>
-                <td className="py-2 px-3 text-center">
+              <div className="mt-4 border-t pt-4 flex items-center justify-between">
+                <div className="text-sm text-slate-600">Duración: <span className="font-medium text-slate-800">{t.duration_minutes} min</span></div>
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleEdit(t)}
-                    className="bg-yellow-500 text-white px-2 py-1 rounded mr-2 hover:bg-yellow-600"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200 transition-colors"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => handleDelete(t.id)}
-                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
                   >
                     Eliminar
                   </button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="5" className="text-center py-4 text-gray-500">
-                No hay timeslots registrados
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="col-span-full text-center text-gray-500">No hay timeslots registrados</div>
+        )}
+      </div>
     </div>
   );
 }

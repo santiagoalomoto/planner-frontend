@@ -6,6 +6,7 @@ import Table from '../components/Table'
 import Modal from '../components/Modal'
 import Input from '../components/Input'
 import api from '../api/axios'
+import { Users as UsersIcon } from 'lucide-react'
 
 const API = '/users'
 
@@ -75,15 +76,16 @@ export default function Users() {
   }, [])
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6 space-y-6">
       <SectionTitle
+        icon={UsersIcon}
         title="Gestión de Usuarios"
         subtitle="Administra las cuentas de los usuarios del sistema"
       />
 
       <Card>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Usuarios registrados</h3>
+          <h3 className="text-lg font-semibold text-slate-800">Usuarios registrados</h3>
           <Button onClick={() => setModalOpen(true)}>+ Nuevo Usuario</Button>
         </div>
 
@@ -95,13 +97,12 @@ export default function Users() {
             u.related_id || '(N/A)',
             new Date(u.created_at).toLocaleDateString(),
             <div className="flex gap-2">
-              <Button
-                color="danger"
-                size="sm"
+              <button
                 onClick={() => handleDelete(u.id)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
               >
                 Eliminar
-              </Button>
+              </button>
             </div>,
           ])}
           loading={loading}

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import api from '../api/axios'
 import Button from '../components/Button'
+import SectionTitle from '../components/SectionTitle'
+import Card from '../components/Card'
+import { Calendar } from 'lucide-react'
 
 export default function Schedules() {
   const [roomSchedules, setRoomSchedules] = useState([])
@@ -98,71 +101,71 @@ export default function Schedules() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Gestión de Horarios</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6 space-y-6">
+      <SectionTitle icon={Calendar} title="Gestión de Horarios" subtitle="Asigna aulas y docentes a horarios" />
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="bg-white shadow p-4 rounded mb-6 flex flex-wrap gap-3">
-        <select name="roomId" value={form.roomId} onChange={handleChange} className="border p-2 rounded flex-1">
+      <Card>
+        <form onSubmit={handleSubmit} className="flex flex-wrap gap-3">
+        <select name="roomId" value={form.roomId} onChange={handleChange} className="w-full md:flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
           <option value="">Seleccionar aula</option>
           {rooms.map((r) => (
             <option key={r.id} value={r.id}>{r.name}</option>
           ))}
         </select>
-
-        <select name="teacherId" value={form.teacherId} onChange={handleChange} className="border p-2 rounded flex-1">
+        <select name="teacherId" value={form.teacherId} onChange={handleChange} className="w-full md:flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
           <option value="">Seleccionar docente</option>
           {teachers.map((t) => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
         </select>
-
-        <select name="timeslotId" value={form.timeslotId} onChange={handleChange} className="border p-2 rounded flex-1">
+        <select name="timeslotId" value={form.timeslotId} onChange={handleChange} className="w-full md:flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
           <option value="">Seleccionar horario</option>
           {timeslots.map((t) => (
             <option key={t.id} value={t.id}>{t.label}</option>
           ))}
         </select>
-
-        <select name="sectionId" value={form.sectionId} onChange={handleChange} className="border p-2 rounded flex-1">
+        <select name="sectionId" value={form.sectionId} onChange={handleChange} className="w-full md:flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
           <option value="">Seleccionar sección</option>
           {sections.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
-
-        <select name="semesterId" value={form.semesterId} onChange={handleChange} className="border p-2 rounded flex-1">
+        <select name="semesterId" value={form.semesterId} onChange={handleChange} className="w-full md:flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
           <option value="">Seleccionar semestre</option>
           {semesters.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
-
-        <Button>Agregar</Button>
-      </form>
+        <div className="flex items-center">
+          <Button>Agregar</Button>
+        </div>
+        </form>
+      </Card>
 
       {/* Tabla de Aulas */}
-      <div className="bg-white shadow rounded p-4 mb-6">
+      <Card>
         <h2 className="text-lg font-semibold mb-3">Horarios por Aula</h2>
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border p-2 text-left">Aula</th>
-              <th className="border p-2 text-left">Sección</th>
-              <th className="border p-2 text-left">Horario</th>
-              <th className="border p-2 text-left">Semestre</th>
-              <th className="border p-2 text-left">Acciones</th>
+            <tr className="bg-slate-100">
+              <th className="p-3 text-left text-sm text-slate-600">Aula</th>
+              <th className="p-3 text-left text-sm text-slate-600">Sección</th>
+              <th className="p-3 text-left text-sm text-slate-600">Horario</th>
+              <th className="p-3 text-left text-sm text-slate-600">Semestre</th>
+              <th className="p-3 text-left text-sm text-slate-600">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {roomSchedules.map((r) => (
-              <tr key={r.id}>
-                <td className="border p-2">{r.room?.name}</td>
-                <td className="border p-2">{r.section?.name}</td>
-                <td className="border p-2">{r.timeslot?.label}</td>
-                <td className="border p-2">{r.semester?.name}</td>
-                <td className="border p-2">
-                  <button onClick={() => handleDelete(r.id, 'rooms')} className="text-red-600 hover:underline">
+              <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                <td className="border p-3 text-sm">{r.room?.name}</td>
+                <td className="border p-3 text-sm">{r.section?.name}</td>
+                <td className="border p-3 text-sm">{r.timeslot?.label}</td>
+                <td className="border p-3 text-sm">{r.semester?.name}</td>
+                <td className="border p-3 text-sm">
+                  <button onClick={() => handleDelete(r.id, 'rooms')} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors">
                     Eliminar
                   </button>
                 </td>
@@ -170,30 +173,32 @@ export default function Schedules() {
             ))}
           </tbody>
         </table>
-      </div>
+        </div>
+      </Card>
 
       {/* Tabla de Docentes */}
-      <div className="bg-white shadow rounded p-4">
+      <Card>
         <h2 className="text-lg font-semibold mb-3">Horarios por Docente</h2>
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border p-2 text-left">Docente</th>
-              <th className="border p-2 text-left">Sección</th>
-              <th className="border p-2 text-left">Horario</th>
-              <th className="border p-2 text-left">Semestre</th>
-              <th className="border p-2 text-left">Acciones</th>
+            <tr className="bg-slate-100">
+              <th className="p-3 text-left text-sm text-slate-600">Docente</th>
+              <th className="p-3 text-left text-sm text-slate-600">Sección</th>
+              <th className="p-3 text-left text-sm text-slate-600">Horario</th>
+              <th className="p-3 text-left text-sm text-slate-600">Semestre</th>
+              <th className="p-3 text-left text-sm text-slate-600">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {teacherSchedules.map((t) => (
-              <tr key={t.id}>
-                <td className="border p-2">{t.teacher?.name}</td>
-                <td className="border p-2">{t.section?.name}</td>
-                <td className="border p-2">{t.timeslot?.label}</td>
-                <td className="border p-2">{t.semester?.name}</td>
-                <td className="border p-2">
-                  <button onClick={() => handleDelete(t.id, 'teachers')} className="text-red-600 hover:underline">
+              <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                <td className="border p-3 text-sm">{t.teacher?.name}</td>
+                <td className="border p-3 text-sm">{t.section?.name}</td>
+                <td className="border p-3 text-sm">{t.timeslot?.label}</td>
+                <td className="border p-3 text-sm">{t.semester?.name}</td>
+                <td className="border p-3 text-sm">
+                  <button onClick={() => handleDelete(t.id, 'teachers')} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors">
                     Eliminar
                   </button>
                 </td>
@@ -201,7 +206,8 @@ export default function Schedules() {
             ))}
           </tbody>
         </table>
-      </div>
+        </div>
+      </Card>
     </div>
   )
 }

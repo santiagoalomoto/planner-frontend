@@ -1,6 +1,10 @@
 // src/pages/Rooms.jsx
 import React, { useEffect, useState } from 'react'
 import api from '../api/axios'
+import SectionTitle from '../components/SectionTitle'
+import Card from '../components/Card'
+import Button from '../components/Button'
+import { Building2 } from 'lucide-react'
 
 export default function Rooms() {
   const [rooms, setRooms] = useState([])
@@ -108,12 +112,33 @@ export default function Rooms() {
     }
   }
 
+  const totalCapacity = rooms.reduce((acc, r) => acc + (Number(r.capacity) || 0), 0)
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Gestión de Salas</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6 space-y-6">
+      <SectionTitle icon={Building2} title="Gestión de Salas" subtitle="Administra aulas, laboratorios y espacios" />
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 border border-blue-200 shadow-lg">
+          <p className="text-blue-600 text-sm font-medium mb-1">Total Salas</p>
+          <p className="text-2xl font-bold text-blue-700">{rooms.length}</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4 border border-green-200 shadow-lg">
+          <p className="text-green-600 text-sm font-medium mb-1">Capacidad Total</p>
+          <p className="text-2xl font-bold text-green-700">{totalCapacity}</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200 shadow-lg">
+          <p className="text-orange-600 text-sm font-medium mb-1">Tipos distintos</p>
+          <p className="text-2xl font-bold text-orange-700">{Array.from(new Set(rooms.map(r => (r.type || '').toString().toLowerCase()))).filter(Boolean).length}</p>
+        </div>
+      </div>
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="bg-white shadow p-4 rounded mb-6 grid gap-3">
+      <Card>
+        <form onSubmit={handleSubmit} className="grid gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <input
             name="code"
@@ -167,7 +192,7 @@ export default function Rooms() {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow hover:shadow-lg transition"
           >
             {isEditing ? 'Actualizar sala' : 'Crear sala'}
           </button>
@@ -175,16 +200,17 @@ export default function Rooms() {
             <button
               type="button"
               onClick={resetForm}
-              className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
+              className="bg-gray-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
             >
               Cancelar
             </button>
           )}
         </div>
       </form>
+      </Card>
 
       {/* Lista */}
-      <div className="bg-white shadow rounded p-4">
+      <Card>
         <h2 className="text-lg font-semibold mb-3">Salas registradas</h2>
 
         {loading ? (
@@ -195,37 +221,37 @@ export default function Rooms() {
           <div className="overflow-auto">
             <table className="w-full table-auto border-collapse">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="border p-2 text-left">#</th>
-                  <th className="border p-2 text-left">Código</th>
-                  <th className="border p-2 text-left">Nombre</th>
-                  <th className="border p-2 text-left">Capacidad</th>
-                  <th className="border p-2 text-left">Tipo</th>
-                  <th className="border p-2 text-left">Características</th>
-                  <th className="border p-2 text-left">Acciones</th>
+                <tr className="bg-slate-100">
+                  <th className="border p-3 text-left">#</th>
+                  <th className="border p-3 text-left">Código</th>
+                  <th className="border p-3 text-left">Nombre</th>
+                  <th className="border p-3 text-left">Capacidad</th>
+                  <th className="border p-3 text-left">Tipo</th>
+                  <th className="border p-3 text-left">Características</th>
+                  <th className="border p-3 text-left">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {rooms.map((r, i) => (
-                  <tr key={r.id}>
-                    <td className="border p-2">{i + 1}</td>
-                    <td className="border p-2">{r.code}</td>
-                    <td className="border p-2">{r.name}</td>
-                    <td className="border p-2">{r.capacity}</td>
-                    <td className="border p-2">{r.type || '—'}</td>
-                    <td className="border p-2">
+                  <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="border p-3">{i + 1}</td>
+                    <td className="border p-3">{r.code}</td>
+                    <td className="border p-3">{r.name}</td>
+                    <td className="border p-3">{r.capacity}</td>
+                    <td className="border p-3">{r.type || '—'}</td>
+                    <td className="border p-3">
                       <pre className="text-xs">{JSON.stringify(r.features || {}, null, 2)}</pre>
                     </td>
-                    <td className="border p-2">
+                    <td className="border p-3">
                       <button
                         onClick={() => handleEdit(r)}
-                        className="mr-2 text-indigo-600 hover:underline"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200 transition-colors mr-2"
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => handleDelete(r.id)}
-                        className="text-red-600 hover:underline"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
                       >
                         Eliminar
                       </button>
@@ -236,7 +262,7 @@ export default function Rooms() {
             </table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

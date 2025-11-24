@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import api from '../api/axios'
+import SectionTitle from '../components/SectionTitle'
+import Card from '../components/Card'
+import Button from '../components/Button'
+import { Users } from 'lucide-react'
 
 export default function Teachers() {
   const [teachers, setTeachers] = useState([])
@@ -55,80 +59,93 @@ export default function Teachers() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Gestión de Docentes</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6 space-y-6">
+      <SectionTitle icon={Users} title="Gestión de Docentes" subtitle="Administra los docentes del sistema" />
 
-      {/* Formulario */}
-      <form onSubmit={handleSubmit} className="bg-white shadow p-4 rounded mb-6 flex flex-wrap gap-3">
-        <input
-          type="text"
-          name="name"
-          placeholder="Nombre"
-          value={form.name}
-          onChange={handleChange}
-          className="border p-2 rounded flex-1"
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Correo electrónico"
-          value={form.email}
-          onChange={handleChange}
-          className="border p-2 rounded flex-1"
-        />
-        <input
-          type="number"
-          name="max_weekly_hours"
-          placeholder="Horas máx. por semana"
-          value={form.max_weekly_hours}
-          onChange={handleChange}
-          className="border p-2 rounded flex-1"
-        />
-        <input
-          type="text"
-          name="notes"
-          placeholder="Notas"
-          value={form.notes}
-          onChange={handleChange}
-          className="border p-2 rounded flex-1"
-        />
+      <Card>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <input
+            type="text"
+            name="name"
+            placeholder="Nombre"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          />
 
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-          Agregar
-        </button>
-      </form>
+          <input
+            type="email"
+            name="email"
+            placeholder="Correo electrónico"
+            value={form.email}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          />
 
-      {/* Tabla */}
-      <div className="bg-white shadow rounded p-4">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border p-2 text-left">#</th>
-              <th className="border p-2 text-left">Nombre</th>
-              <th className="border p-2 text-left">Email</th>
-              <th className="border p-2 text-left">Horas</th>
-              <th className="border p-2 text-left">Notas</th>
-              <th className="border p-2 text-left">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {teachers.map((t, i) => (
-              <tr key={t.id}>
-                <td className="border p-2">{i + 1}</td>
-                <td className="border p-2">{t.name}</td>
-                <td className="border p-2">{t.email || '—'}</td>
-                <td className="border p-2">{t.max_weekly_hours || '—'}</td>
-                <td className="border p-2">{t.notes || '—'}</td>
-                <td className="border p-2">
-                  <button onClick={() => handleDelete(t.id)} className="text-red-600 hover:underline">
-                    Eliminar
-                  </button>
-                </td>
+          <input
+            type="number"
+            name="max_weekly_hours"
+            placeholder="Horas máx. por semana"
+            value={form.max_weekly_hours}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          />
+
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              name="notes"
+              placeholder="Notas"
+              value={form.notes}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            />
+            <button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all">
+              Agregar
+            </button>
+          </div>
+        </form>
+      </Card>
+
+      <Card>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+                <tr className="bg-slate-100">
+                  <th className="border p-3 text-left text-sm text-slate-600 w-14">N°</th>
+                <th className="border p-3 text-left text-sm text-slate-600">Nombre</th>
+                <th className="border p-3 text-left text-sm text-slate-600">Email</th>
+                <th className="border p-3 text-left text-sm text-slate-600">Horas</th>
+                <th className="border p-3 text-left text-sm text-slate-600">Notas</th>
+                <th className="border p-3 text-left text-sm text-slate-600">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {teachers.map((t, i) => (
+                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="border p-3 text-sm">
+                      <div className="inline-flex items-center justify-center w-8 h-8 bg-slate-100 text-slate-700 rounded-full font-medium">
+                        {i + 1}
+                      </div>
+                    </td>
+                  <td className="border p-3 text-sm">{t.name}</td>
+                  <td className="border p-3 text-sm text-slate-600">{t.email || '—'}</td>
+                  <td className="border p-3 text-sm text-slate-600">{t.max_weekly_hours || '—'}</td>
+                  <td className="border p-3 text-sm text-slate-600">{t.notes || '—'}</td>
+                  <td className="border p-3 text-sm">
+                    <button
+                      onClick={() => handleDelete(t.id)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 transition-colors"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   )
 }
